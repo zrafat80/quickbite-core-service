@@ -19,7 +19,7 @@ export class RegisterDTO {
         minLowercase: 1,
         minUppercase: 1,
         minNumbers: 1,
-        minSymbols: ,
+        minSymbols: 0,
     }, {
         message: 'Password is not strong enough. It must contain at least 8 characters, one uppercase letter, one lowercase letter, one number.',
     })
