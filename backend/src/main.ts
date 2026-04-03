@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DatabaseErrorFilter } from './common/filters/database-error.filter';
 import { SuccessInterceptor } from './common/interceptors/success.interceptor';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -31,7 +32,7 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs/swagger', app, document);
-
+  app.use(cookieParser());
   // ✅ Validation
   app.useGlobalPipes(
     new ValidationPipe({
@@ -40,7 +41,7 @@ async function bootstrap() {
     }),
   );
 
-  // ✅ Filters 
+  // ✅ Filters
   app.useGlobalFilters(new DatabaseErrorFilter());
 
   // ✅ Interceptors

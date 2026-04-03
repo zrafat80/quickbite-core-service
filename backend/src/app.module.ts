@@ -24,6 +24,8 @@ import { createKeyv } from '@keyv/redis';
 import appConfig from './common/config/app.config';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
+import { UserModule } from './user/user.module';
+import { AddressModule } from './address/address.module';
 
 @Module({
   imports: [
@@ -55,7 +57,9 @@ import { AuthModule } from './auth/auth.module';
     DatabaseModule,
     TerminusModule,
     HealthModule, 
-    AuthModule
+    AuthModule, 
+    UserModule,
+    AddressModule,
 
     // Add your new domain modules (Users, Orders, etc.) here as you build them
   ],

@@ -77,4 +77,30 @@ export class UserRepository {
 
     return this.toEntity(row);
   }
+
+  async updateUserPassword(id: number, password: string) {
+    await this.knex('users')
+      .where('id', id)
+      .update({ password_hash: password });
+  }
+  async findUserById(id: number): Promise<User | undefined> {
+    const row = await this.knex('users').where('id', id).first();
+    // Assuming you have a toEntity mapper like in the password reset repo!
+    return row ? this.toEntity(row) : undefined;
+  }
+  async updateProfile(
+    id: number,
+    data: { name?: string; phone?: string },
+  ): Promise<void> {
+    const updatePayload: any = { updated_at: new Date() };
+
+    // Dynamically build the payload so we don't accidentally set things to undefined
+    if (data.name !== undefined) updatePayload.name = data.name;
+    if (data.phone !== undefined) updatePayload.phone = data.phone;
+
+    // Only run the query if there is actually something to update (more than just updated_at)
+    if (Object.keys(updatePayload).length > 1) {
+      await this.knex('users').where('id', id).update(updatePayload);
+    }
+  }
 }

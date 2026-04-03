@@ -1,14 +1,17 @@
 // src/auth/auth.module.ts
-import { Module } from '@nestjs/common';
+import { forwardRef, Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthUtilsService } from './auth-utils.service';
 import { UserRepository } from '../user/repository/user.repository';
-
+import { UserService } from 'src/user/user.service';
+import { PasswordResetRepository } from './repository/password-reset.repository';
+import { UserModule } from 'src/user/user.module';
+@Global()
 @Module({
     // 1. Imports: We need ConfigModule so AuthUtilsService can use ConfigService!
-    imports: [ConfigModule], 
+    imports: [ConfigModule, forwardRef(() => UserModule)], 
     
     // 2. Controllers: The entry points for your HTTP requests
     controllers: [AuthController],
@@ -17,10 +20,10 @@ import { UserRepository } from '../user/repository/user.repository';
     providers: [
         AuthService, 
         AuthUtilsService, 
-        UserRepository 
+        PasswordResetRepository
     ],
     
     // 4. Exports: (Optional) If another module ever needs AuthService, you would put it here!
-    exports: [AuthService] 
+    exports: [AuthService, AuthUtilsService] 
 })
 export class AuthModule {}

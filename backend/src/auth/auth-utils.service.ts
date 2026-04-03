@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { SignOptions } from 'jsonwebtoken';
-
+import * as crypto from 'crypto';
 export interface JwtPayload {
   userId: number;
   email: string;
@@ -40,5 +40,26 @@ export class AuthUtilsService {
       expiresIn: expiresIn as SignOptions['expiresIn'],
     };
     return jwt.sign(payload, secret, options);
+  }
+  comparePassword(passwordInput: string, hashedPassword: string) {
+    return bcrypt.compare(passwordInput, hashedPassword);
+  }
+  generateOTP(): string {
+    return crypto.randomInt(100000, 999999).toString();
+  }
+
+  hashOTP(otp: string) {
+    return crypto.createHash('sha256').update(otp).digest('hex');
+  }
+  verifyAccessToken(token: string): JwtPayload {
+    return jwt.verify(
+      token,
+      this.configService.get<string>('JWT_ACCESS_SECRET')!,
+    ) as JwtPayload;
+  }
+  verifyRefreshToken(token: string): any {
+    // Make sure your .env has JWT_REFRESH_SECRET!
+    const secret = this.configService.get<string>('JWT_REFRESH_SECRET')!;
+    return jwt.verify(token, secret); // jsonwebtoken library
   }
 }

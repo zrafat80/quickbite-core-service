@@ -10,7 +10,7 @@ export async function up(knex: Knex): Promise<void> {
 
     table.text('otp_hash').notNullable();
     table.timestamp('expires_at').notNullable();
-    table.timestamp('consumed_at').notNullable();
+    table.timestamp('consumed_at');
     table.timestamp('created_at').notNullable();
   });
 }
