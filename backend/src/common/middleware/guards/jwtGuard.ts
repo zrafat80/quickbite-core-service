@@ -31,7 +31,7 @@ export class JwtAuthGuard implements CanActivate {
 
       // 4. Attach the payload to the request (exactly like your Express code)
       request['user'] = payload;
-
+   
       return true; // Let them pass!
     } catch (error) {
       // If the token is fake, modified, or expired, jsonwebtoken throws an error

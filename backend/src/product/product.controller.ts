@@ -11,16 +11,17 @@ import {
   Query,
   BadRequestException,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../common/middleware/guards/jwtGuard'; // Adjust path
+import { JwtAuthGuard } from '../common/middleware/guards/jwtGuard'; 
+import { BranchAccessGuard } from '../common/middleware/guards/branch-access.guard'; // 🌟 Imported the Guard
 import { ProductService } from './product.service';
 import { CreateProductDTO } from './dto/product.dto';
 import { UpdateProductDTO } from './dto/update-product.dto';
 import { PRODUCT_ERRORS } from './product.constants';
 
-// 🌟 FIX: Blank base controller (or 'products' if you have standalone product routes later)
 @Controller()
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
+
   @Get('restaurants/:restaurantId/categories')
   async findCategories(
     @Param('restaurantId', ParseIntPipe) restaurantId: number,
@@ -29,14 +30,12 @@ export class ProductController {
     return { data };
   }
 
-  // 📍 GET /branches/:branchId/products (PUBLIC)
   @Get('branches/:branchId/products')
   async findByBranch(@Param('branchId', ParseIntPipe) branchId: number) {
     const data = await this.productService.findByBranch(branchId);
     return { data };
   }
 
-  // 📍 GET /restaurants/:restaurantId/products (AUTH: Owner/Admin)
   @UseGuards(JwtAuthGuard)
   @Get('restaurants/:restaurantId/products')
   async findByRestaurant(
@@ -51,15 +50,13 @@ export class ProductController {
     return { data };
   }
 
-  // 📍 GET /products/:id (PUBLIC)
   @Get('products/:id')
   async findById(@Param('id', ParseIntPipe) id: number) {
     const product = await this.productService.findById(id);
-    // Returning exactly the requested shape without the "data" wrapper
     return product;
   }
+
   @UseGuards(JwtAuthGuard)
-  // 🌟 FIX: The full nested path belongs strictly to the endpoint!
   @Post('restaurants/:restaurantId/products')
   async createProduct(
     @Param('restaurantId', ParseIntPipe) restaurantId: number,
@@ -78,15 +75,17 @@ export class ProductController {
       product,
     };
   }
-  @UseGuards(JwtAuthGuard)
+
+  // 🌟 FIX: Added BranchAccessGuard! 
+  // Because the URL uses ?branchId=X, our Guard will detect it and check permissions perfectly.
+  @UseGuards(JwtAuthGuard, BranchAccessGuard) 
   @Patch('products/:id')
   async updateProduct(
     @Param('id', ParseIntPipe) id: number,
-    @Query('branchId') branchIdStr: string, // Read the query param as a string first
+    @Query('branchId') branchIdStr: string, 
     @Body() body: UpdateProductDTO,
     @Req() req: any,
   ) {
-    // Safely parse the optional branchId
     const branchId = branchIdStr ? parseInt(branchIdStr, 10) : undefined;
     if (branchIdStr && isNaN(branchId!)) {
       throw new BadRequestException(PRODUCT_ERRORS.BRANCH_ID_SHOULD_BE_NUMBER);
@@ -103,7 +102,7 @@ export class ProductController {
     return {
       message: 'Product updated successfully',
       product: result.product,
-      ...(result.branchDetails && { branchDetails: result.branchDetails }), // Only append if it exists!
+      ...(result.branchDetails && { branchDetails: result.branchDetails }),
     };
   }
 }

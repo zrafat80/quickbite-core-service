@@ -40,7 +40,7 @@ export class AuthService {
     data: any,
     role: SystemRole,
     trx?: Knex.Transaction,
-    now?: Date,
+    now: Date = new Date(),
   ) {
     // 1. Check if user exists using the injected repository
     const existing = await this.userService.checkUserExists(
@@ -81,6 +81,7 @@ export class AuthService {
     const trx = await this.knex.transaction();
     let restaurant;
     let user;
+    let restaurantMemberInfo = {};
 
     try {
       // 🌟 Use the extracted helper to do the heavy security lifting
@@ -99,6 +100,12 @@ export class AuthService {
           data.restaurant,
           trx,
         );
+        await this.memberService.createOwnerMember(restaurant.id, user.id, trx);
+        restaurantMemberInfo = {
+          restaurantId: restaurant.id,
+          restaurantRole: 'owner',
+          branchIds: [],
+        };
       }
 
       await trx.commit();
@@ -109,7 +116,12 @@ export class AuthService {
     }
 
     // Create access token and refresh token
-    const payload = { userId: user.id, role: data.role, email: user.email };
+    const payload = {
+      userId: user.id,
+      role: user.systemRole,
+      email: user.email,
+      ...restaurantMemberInfo,
+    };
     const accessToken = this.authUtils.createAccessToken(payload);
     const refreshToken = this.authUtils.createRefreshToken(payload);
 
@@ -151,10 +163,12 @@ export class AuthService {
       const memberData = await this.memberService.findRestaurantMemberWithRole(
         user.id,
       );
-      const branchIds = await this.memberService.findBranchIdsByMemberId(
-        memberData.member.id,
-      );
+      console.log(memberData, "dd");
+      let branchIds = {};
       if (memberData) {
+        branchIds = await this.memberService.findBranchIdsByMemberId(
+          memberData.member.id,
+        );
         restaurantMemberInfo = {
           restaurantId: memberData.member.restaurantId,
           restaurantRole: memberData.roleName,

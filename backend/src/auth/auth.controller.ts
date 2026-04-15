@@ -22,13 +22,28 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register') // Replaces authRouter.post('/register', ...)[cite: 7]
-  async register(@Body() body: RegisterDTO) {
+  async register(
+    @Body() body: RegisterDTO,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     // NestJS automatically validates the body against RegisterDTO before it even hits this line![cite: 9]
     // If it fails validation, NestJS automatically returns a 400 Bad Request.
 
     // 1. Call service
     const result = await this.authService.register(body);
+    res.cookie('access_token', result.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: TimeUtils.hoursToMs(1),
+    });
 
+    // 3. Set the Refresh Token Cookie (7 days)
+    res.cookie('refresh_token', result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: TimeUtils.daysToMs(7),
+      path: '/api/auth/refresh', // Brilliant move! Only sends to the refresh route.
+    });
     // 2. Respond (NestJS automatically sets status to 201 for @Post requests)[cite: 9]
     return result;
   }

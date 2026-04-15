@@ -19,7 +19,7 @@ export class RestaurantMemberRepository {
   // 🌟 The Translator (Private to the class)
   private toEntity(row: any) {
     return new RestaurantMember({
-      id: row.id ,
+      id: row.id,
       restaurantId: row.restaurant_id,
       userId: row.user_id,
       roleId: row.role_id,
@@ -64,19 +64,23 @@ export class RestaurantMemberRepository {
   async findRestaurantMemberWithRole(
     userId: number,
     trx?: Knex.Transaction,
-  ): Promise<{ member: RestaurantMember; roleName: string }> {
+  ): Promise<any> {
     const row = await this.knex('restaurant_members as rm')
       .select('rm.restaurant_id', 'rm.id', 'r.name as roleName')
       .leftJoin('roles as r', 'rm.role_id', 'r.id')
       .where('rm.user_id', userId)
       .andWhere('rm.status', MemberStatus.ACTIVE)
       .first();
+    if (!row) return row;
     return {
       member: this.toEntity(row),
       roleName: row.roleName,
     };
   }
-  async findMembersByRestaurantId(restaurantId: number, trx?: Knex.Transaction) {
+  async findMembersByRestaurantId(
+    restaurantId: number,
+    trx?: Knex.Transaction,
+  ) {
     const db = trx || this.knex;
 
     // Joins restaurant_members, users, and roles to return a flat list for the dashboard
@@ -121,7 +125,7 @@ export class RestaurantMemberRepository {
     trx?: Knex.Transaction,
   ): Promise<void> {
     const db = trx || this.knex;
-    
+
     const updateData: any = { updated_at: this.knex.fn.now() };
     if (data.roleId) updateData.role_id = data.roleId;
     if (data.status) updateData.status = data.status;
@@ -131,12 +135,14 @@ export class RestaurantMemberRepository {
 
   async deleteMember(memberId: number, trx?: Knex.Transaction): Promise<void> {
     // 🛡️ Ensure this happens safely in a transaction
-    const transaction = trx || await this.knex.transaction();
-    
+    const transaction = trx || (await this.knex.transaction());
+
     try {
       // 1. Delete Foreign Key constraints first (member_branches)
-      await transaction('member_branches').where('member_id', memberId).delete();
-      
+      await transaction('member_branches')
+        .where('member_id', memberId)
+        .delete();
+
       // 2. Delete the main record
       await transaction('restaurant_members').where('id', memberId).delete();
 

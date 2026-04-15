@@ -35,8 +35,6 @@ export class BranchService {
     const restaurant =
       await this.restaurantService.findRestaurantById(restaurantId);
 
-    // 🛡️ CRITICAL FIX: If the restaurant doesn't exist, we must throw an error BEFORE checking ownerId!
-    // Otherwise, `restaurant.ownerId` will crash the server with "Cannot read properties of undefined"
     if (!restaurant) {
       throw new NotFoundException('Restaurant not found');
     }

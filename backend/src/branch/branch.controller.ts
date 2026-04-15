@@ -13,31 +13,30 @@ import {
 } from '@nestjs/common';
 import { BranchService } from './branch.service';
 import { CreateBranchDTO } from './dto/branch.dto';
-import { SystemRole } from '../user/enums'; // Adjust path
-// Assuming you have a standard JWT guard set up from your Auth Module!
+import { SystemRole } from '../user/enums';
 import { JwtAuthGuard } from 'src/common/middleware/guards/jwtGuard';
+import { BranchAccessGuard } from 'src/common/middleware/guards/branch-access.guard'; // 🌟 Imported the Guard
 import {
   UpdateBranchDTO,
   UpdateBranchStatusDTO,
 } from './dto/update-branch.dto';
+import { RequirePermissions } from 'src/common/decorators/permissions.decorator';
+import { RestaurantMemberGuard } from 'src/common/middleware/guards/restaurant-member.guard';
+import { PermissionsGuard } from 'src/common/middleware/guards/permissions.guard';
 
-// 🌟 We leave the prefix empty because your two routes have different starting paths
-// (/branches vs /restaurants). We will define the exact paths on the methods!
 @Controller()
 export class BranchController {
   constructor(private readonly branchService: BranchService) {}
 
-  // 📍 GET /branches/nearby?lat=...&lng=...
   @Get('branches/nearby')
   async findNearby(
-    // ParseFloatPipe guarantees these are valid decimal numbers before hitting your service
     @Query('lat', ParseFloatPipe) lat: number,
     @Query('lng', ParseFloatPipe) lng: number,
   ) {
-    // No try/catch needed! NestJS automatically catches errors and sends 400/500s.
     const results = await this.branchService.findNearby(lat, lng);
     return { data: results };
   }
+
   @Get('restaurants/:restaurantId/branches')
   async findByRestaurant(
     @Param('restaurantId', ParseIntPipe) restaurantId: number,
@@ -46,20 +45,14 @@ export class BranchController {
     return { data };
   }
 
-  // 📍 POST /restaurants/:restaurantId/branches
-  @UseGuards(JwtAuthGuard) // 🛡️ Replaces your old `authenticate` middleware
   @Post('restaurants/:restaurantId/branches')
+  @UseGuards(JwtAuthGuard, RestaurantMemberGuard, PermissionsGuard)
+  @RequirePermissions('core:branch', 'create')
   async create(
-    // ParseIntPipe guarantees the ID is a valid integer
     @Param('restaurantId', ParseIntPipe) restaurantId: number,
-
-    // NestJS ValidationPipe automatically validates this DTO! No manual validateBody() needed.
     @Body() data: CreateBranchDTO,
-
-    // Grabbing the authenticated user attached by the JwtAuthGuard
     @Req() req: any,
   ) {
-    // Extracting user info from the JWT payload
     const userId = req.user.userId;
     const userRole = req.user.role as SystemRole;
 
@@ -70,23 +63,23 @@ export class BranchController {
       data,
     );
 
-    // NestJS automatically sets the status to 201 Created for @Post routes!
     return {
       message: 'Branch added',
       branch,
     };
   }
 
-  // 📍 PATCH /branches/:id (Owner/Admin)
-  @UseGuards(JwtAuthGuard)
-  @Patch('branches/:id')
+  // 📍 PATCH /branches/:branchId (Owner/Admin)
+  // 🌟 FIX: Changed :id to :branchId to match the Guard!
+  @UseGuards(JwtAuthGuard, BranchAccessGuard) // 🛡️ Added BranchAccessGuard
+  @Patch('branches/:branchId')
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('branchId', ParseIntPipe) branchId: number, // 🌟 Updated Param name
     @Body() data: UpdateBranchDTO,
     @Req() req: any,
   ) {
     const branch = await this.branchService.update(
-      id,
+      branchId,
       req.user.userId,
       req.user.role,
       data,
@@ -97,16 +90,17 @@ export class BranchController {
     };
   }
 
-  // 📍 PATCH /branches/:id/status (Admin Only)
-  @UseGuards(JwtAuthGuard)
-  @Patch('branches/:id/status')
+  // 📍 PATCH /branches/:branchId/status (Admin Only)
+  // 🌟 FIX: Changed :id to :branchId to match the Guard!
+  @UseGuards(JwtAuthGuard, BranchAccessGuard) // 🛡️ Added BranchAccessGuard
+  @Patch('branches/:branchId/status')
   async updateStatus(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('branchId', ParseIntPipe) branchId: number, // 🌟 Updated Param name
     @Body() data: UpdateBranchStatusDTO,
     @Req() req: any,
   ) {
     const branch = await this.branchService.updateStatus(
-      id,
+      branchId,
       req.user.role,
       data,
     );

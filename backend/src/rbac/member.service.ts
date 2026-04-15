@@ -22,6 +22,7 @@ import { RBAC_ERRORS } from './rbac.constants';
 import { AuthUtilsService } from 'src/auth/auth-utils.service';
 import { TimeUtils } from 'src/common/utils/time.utils';
 import { BranchService } from 'src/branch/branch.service';
+import { RestaurantMember } from './entity/restaurant-member.entity';
 
 @Injectable()
 export class MemberService {
@@ -36,6 +37,28 @@ export class MemberService {
     private readonly permissionRepo: PermissionRepo, // 🌟 Injected PermissionRepo
     @Inject('KNEX_CONNECTION') private readonly knex: Knex,
   ) {}
+  async createOwnerMember(
+    restaurantId: number,
+    userId: number,
+    trx?: Knex.Transaction,
+  ): Promise<RestaurantMember> {
+    const ownerRoleId = await this.roleRepo.findRoleByName('owner', trx);
+    if (!ownerRoleId) {
+      throw new NotFoundException(RBAC_ERRORS.ROLE_NOT_FOUND);
+    }
+    const now = new Date();
+    return this.restaurantMemberRepo.createRestaurantMember(
+      {
+        restaurantId,
+        userId,
+        roleId: ownerRoleId,
+        status: MemberStatus.ACTIVE,
+        createdAt: now,
+        updatedAt: now,
+      },
+      trx,
+    );
+  }
 
   async createMember(restaurantId: number, data: CreateMemberDTO) {
     if (data.role === 'owner') {
@@ -125,7 +148,7 @@ export class MemberService {
   async listMembers(restaurantId: number) {
     const members =
       await this.restaurantMemberRepo.findMembersByRestaurantId(restaurantId);
-    return { data: members };
+    return members;
   }
 
   async updateMember(
@@ -210,9 +233,9 @@ export class MemberService {
       memberId,
       data.branchIds || [],
     );
-    return { message: 'Member branch access updated successfully' };
+    return { message: 'Member branches access updated successfully' };
   }
-  
+
   async getRolePermissions(roleName: string) {
     const permissions =
       await this.permissionRepo.getPermissionsByRoleName(roleName);

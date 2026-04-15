@@ -1,25 +1,38 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
-import { MemberBranchRepository } from '../../../rbac/repository/member-branch.repository';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { SystemRole } from 'src/user/enums';
-import { GUARD_ERRORS } from './guard.constants'; // 🌟 Import the constants
+import { GUARD_ERRORS } from './guard.constants';
 
 @Injectable()
 export class BranchAccessGuard implements CanActivate {
-  constructor(private memberBranchRepo: MemberBranchRepository) {}
+  // We don't even need the MemberBranchRepository here anymore!
+  // Reading from the JWT in memory is 1000x faster than querying the database.
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest();
     const user = req.user;
-    const branchId = parseInt(req.params.branchId, 10);
 
+    // 🌟 1. Extract branchId from params OR query string (Fallback)
+    const branchIdStr = req.params.branchId || req.query.branchId;
+    const branchId = parseInt(branchIdStr, 10);
+
+    // If the route doesn't specify a branch, let it pass (other guards will handle it)
     if (!branchId) return true;
+
+    // 🌟 2. System Admin and Owner Bypass
     if (user.role === SystemRole.SYSTEM_ADMIN) return true;
     if (user.restaurantRole === 'owner') return true;
 
-    const hasAccess = {}; // TODO: Plug your actual check here later!
+    // 🌟 3. Check the JWT Payload
+    // Because we fetch these during login, user.branchIds will be an array like [2, 5, 8]
+    const userBranchIds: number[] = user.branchIds || [];
+    const hasAccess = userBranchIds.includes(branchId);
 
     if (!hasAccess) {
-      // 🌟 Use the constant!
       throw new ForbiddenException(GUARD_ERRORS.BRANCH_ACCESS_DENIED);
     }
 

@@ -44,7 +44,7 @@ export class RoleRepository {
   async findRoleByName(
     name: string,
     trx?: Knex.Transaction,
-  ): Promise<Role | null> {
+  ): Promise<number | null> {
     const db = trx || this.knex;
 
     const row = await db('roles').select('id').where('name', name).first();
