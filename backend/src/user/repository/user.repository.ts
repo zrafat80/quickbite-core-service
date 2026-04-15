@@ -2,21 +2,21 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Knex } from 'knex';
 import { User } from '../entity/user.entity';
+const USER_COLUMNS = [
+  'id',
+  'email',
+  'phone',
+  'name',
+  'password_hash',
+  'system_role',
+  'created_at',
+  'updated_at',
+  'deleted_at',
+];
 
 @Injectable()
 export class UserRepository {
   // Keeping the columns locked safely inside the class
-  private readonly USER_COLUMNS = [
-    'id',
-    'email',
-    'phone',
-    'name',
-    'password_hash',
-    'system_role',
-    'created_at',
-    'updated_at',
-    'deleted_at',
-  ];
 
   // Injecting Knex perfectly instead of using a global db import
   constructor(@Inject('KNEX_CONNECTION') private readonly knex: Knex) {}
@@ -35,10 +35,13 @@ export class UserRepository {
     });
   }
 
-  async findUserByEmail(email: string): Promise<User | undefined> {
-    // Using the Query Builder for a clean, dynamic select
-    const row = await this.knex('users')
-      .select(this.USER_COLUMNS)
+  async findUserByEmail(
+    email: string,
+    trx?: Knex.Transaction,
+  ): Promise<User | undefined> {
+    const db = trx || this.knex;
+    const row = await db('users')
+      .select(USER_COLUMNS)
       .where('email', email)
       .whereNull('deleted_at')
       .first();
@@ -49,8 +52,10 @@ export class UserRepository {
   async findUserExistsByEmailOrPhone(
     email: string,
     phone: string,
+    trx?: Knex.Transaction,
   ): Promise<boolean> {
     // Using Raw SQL for the highly optimized EXISTS check
+    const db = trx || this.knex;
     const result = await this.knex.raw(
       `
             SELECT EXISTS (SELECT 1 FROM users WHERE email = ? OR phone = ?) AS "exists"
@@ -61,9 +66,10 @@ export class UserRepository {
     return result.rows[0].exists;
   }
 
-  async createUser(user: Partial<User>): Promise<User> {
+  async createUser(user: Partial<User>, trx?: Knex.Transaction): Promise<User> {
     // Mapping your camelCase entity back to snake_case for insertion
-    const [row] = await this.knex('users')
+    const db = trx || this.knex;
+    const [row] = await db('users')
       .insert({
         email: user.email,
         phone: user.phone,
@@ -73,15 +79,18 @@ export class UserRepository {
         created_at: user.createdAt,
         updated_at: user.updatedAt,
       })
-      .returning(this.USER_COLUMNS);
+      .returning(USER_COLUMNS);
 
     return this.toEntity(row);
   }
 
-  async updateUserPassword(id: number, password: string) {
-    await this.knex('users')
-      .where('id', id)
-      .update({ password_hash: password });
+  async updateUserPassword(
+    id: number,
+    password: string,
+    trx?: Knex.Transaction,
+  ) {
+    const db = trx || this.knex;
+    await db('users').where('id', id).update({ password_hash: password });
   }
   async findUserById(id: number): Promise<User | undefined> {
     const row = await this.knex('users').where('id', id).first();

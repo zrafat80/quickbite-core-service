@@ -2,7 +2,7 @@
 import { Body, Controller, Get, Patch, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { UserService } from './user.service';
-import { JwtAuthGuard } from 'src/common/middleware/guard';
+import { JwtAuthGuard } from 'src/common/middleware/guards/jwtGuard';
 import { UpdateProfileDTO } from './dto/user-profile.dto';
 
 @Controller('users') // This makes the base route /users

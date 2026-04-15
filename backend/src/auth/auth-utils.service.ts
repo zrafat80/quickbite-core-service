@@ -1,20 +1,31 @@
 // src/auth/auth-utils.service.ts
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { SignOptions } from 'jsonwebtoken';
 import * as crypto from 'crypto';
+import { Knex } from 'knex';
+import { PasswordResetRepository } from './repository/password-reset.repository';
 export interface JwtPayload {
   userId: number;
   email: string;
   role: string;
+  // for restaurant users only
+  restaurantId?: number;
+  restaurantRole?: string;
+  branchIds?: number[];
 }
 
 @Injectable()
 export class AuthUtilsService {
   // Inject the NestJS ConfigService!
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly passwordResetRepo: PasswordResetRepository,
+
+    @Inject('KNEX_CONNECTION') private readonly knex: Knex,
+  ) {}
 
   async hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, 10);
@@ -61,5 +72,27 @@ export class AuthUtilsService {
     // Make sure your .env has JWT_REFRESH_SECRET!
     const secret = this.configService.get<string>('JWT_REFRESH_SECRET')!;
     return jwt.verify(token, secret); // jsonwebtoken library
+  }
+  // Inside src/auth/auth.service.ts
+  async generateAndSaveOTP(
+    userId: number,
+    expiresInMs: number, // 🌟 Accept the dynamic expiry time!
+    trx?: Knex.Transaction,
+    createdAt?: Date,
+  ): Promise<any> {
+    const rawOtp = this.generateOTP();
+    const hashedOtp = await this.hashOTP(rawOtp);
+
+    await this.passwordResetRepo.createPasswordReset(
+      {
+        userId: userId,
+        otpHash: hashedOtp,
+        expiresAt: new Date(Date.now() + expiresInMs), // 🌟 Apply it dynamically
+        createdAt: createdAt,
+      },
+      trx,
+    );
+
+    return rawOtp;
   }
 }

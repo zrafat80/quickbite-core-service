@@ -1,9 +1,20 @@
 // src/address/address.controller.ts
-import { Controller, Post, Body, Req, UseGuards, Get, Param, ParseIntPipe, Patch, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Req,
+  UseGuards,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Delete,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { AddressService } from './address.service';
 import { CreateAddressDTO } from './dto/create-address.dto';
-import { JwtAuthGuard } from 'src/common/middleware/guard';
+import { JwtAuthGuard } from 'src/common/middleware/guards/jwtGuard';
 import { UpdateAddressDTO } from './dto/update-address.dto';
 @Controller('customer/addresses')
 export class AddressController {
@@ -41,7 +52,7 @@ export class AddressController {
   @UseGuards(JwtAuthGuard)
   async deleteAddress(
     @Req() req: Request,
-    @Param('addressId', ParseIntPipe) addressId: number
+    @Param('addressId', ParseIntPipe) addressId: number,
   ) {
     const userId = (req as any).user?.userId;
     return this.addressService.deleteAddress(userId, addressId);

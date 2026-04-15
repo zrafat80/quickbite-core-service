@@ -59,6 +59,8 @@ export class AuthController {
     // 4. Return the user data (you don't need to send the tokens in the JSON body anymore!)
     return {
       message: result.message,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
       user: result.user,
     };
   }
@@ -73,6 +75,17 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() body: ResetPasswordDTO) {
     return this.authService.resetPassword(body);
+  }
+  @Post('accept-invite')
+  @HttpCode(HttpStatus.OK) // 🌟 Forces a 200 OK instead of default 201 Created
+  async acceptInvite(@Body() data: ResetPasswordDTO) {
+    // The ValidationPipe already validated 'data' before this line runs!
+    await this.authService.acceptInvite(data);
+
+    // NestJS automatically serializes returns into JSON responses!
+    return {
+      message: 'Invitation accepted successfully, please login again',
+    };
   }
   @Post('refresh')
   @HttpCode(HttpStatus.OK)

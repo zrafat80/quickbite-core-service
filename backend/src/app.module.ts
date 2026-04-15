@@ -26,6 +26,11 @@ import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { AddressModule } from './address/address.module';
+import { RestaurantModule } from './restaurant/restaurant.module';
+import { BranchModule } from './branch/branch.module';
+import { Product } from './product/entity/product.entity';
+import { ProductModule } from './product/product.module';
+import { RbacModule } from './rbac/rbac.module';
 
 @Module({
   imports: [
@@ -56,11 +61,14 @@ import { AddressModule } from './address/address.module';
     // Core Modules
     DatabaseModule,
     TerminusModule,
-    HealthModule, 
-    AuthModule, 
+    HealthModule,
+    AuthModule,
     UserModule,
     AddressModule,
-
+    RestaurantModule,
+    BranchModule,
+    ProductModule,
+    RbacModule,
     // Add your new domain modules (Users, Orders, etc.) here as you build them
   ],
   controllers: [],
