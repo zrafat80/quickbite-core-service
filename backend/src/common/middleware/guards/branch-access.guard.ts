@@ -4,7 +4,7 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
-import { SystemRole } from 'src/user/enums';
+import { SystemRole } from 'src/app/user/enums';
 import { GUARD_ERRORS } from './guard.constants';
 
 @Injectable()

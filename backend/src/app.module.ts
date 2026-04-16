@@ -22,15 +22,14 @@ import { TerminusModule } from '@nestjs/terminus';
 import { CacheModule } from '@nestjs/cache-manager';
 import { createKeyv } from '@keyv/redis';
 import appConfig from './common/config/app.config';
-import { HealthModule } from './health/health.module';
-import { AuthModule } from './auth/auth.module';
-import { UserModule } from './user/user.module';
-import { AddressModule } from './address/address.module';
-import { RestaurantModule } from './restaurant/restaurant.module';
-import { BranchModule } from './branch/branch.module';
-import { Product } from './product/entity/product.entity';
-import { ProductModule } from './product/product.module';
-import { RbacModule } from './rbac/rbac.module';
+import { HealthModule } from './app/health/health.module';
+import { AuthModule } from './app/auth/auth.module';
+import { UserModule } from './app/user/user.module';
+import { AddressModule } from './app/address/address.module';
+import { RestaurantModule } from './app/restaurant/restaurant.module';
+import { BranchModule } from './app/branch/branch.module';
+import { ProductModule } from './app/product/product.module';
+import { RbacModule } from './app/rbac/rbac.module';
 
 @Module({
   imports: [
