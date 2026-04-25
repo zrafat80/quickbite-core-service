@@ -1,4 +1,4 @@
-// src/common/utils/time.utils.ts
+// src/lib/utils/time.utils.ts
 
 export const TimeUtils = {
   /**

@@ -6,28 +6,29 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { RestaurantService } from './restaurant.service';
-import { JwtAuthGuard } from 'src/common/middleware/guards/jwtGuard';
+import { JwtAuthGuard } from 'src/lib/middleware/guards/jwtGuard';
 import { CreateRestaurantAdminDTO } from './dto/create-restaurant-admin.dto';
 import {
   UpdateRestaurantDTO,
   UpdateRestaurantStatusDTO,
 } from './dto/update-restaurant.dto';
+import { IdempotencyInterceptor } from 'src/lib/idempotency/idempotency.interceptor';
+import { Idempotency } from 'src/lib/idempotency/idempotency.decorator';
 
 @Controller('restaurants')
 export class RestaurantController {
   constructor(private readonly restaurantService: RestaurantService) {}
 
   @Get()
-  async getAllRestaurants() {
-    const restaurants = await this.restaurantService.findAll();
-    return {
-      message: 'Restaurants retrieved successfully',
-      data: restaurants,
-    };
+  async getAllRestaurants(@Query() queryParams: any) {
+    const restaurants = await this.restaurantService.findAll(queryParams);
+    return restaurants;
   }
 
   @Get(':id')
@@ -40,6 +41,8 @@ export class RestaurantController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(IdempotencyInterceptor)
+  @Idempotency({ strict: true })
   @Post()
   async createRestaurantWithOwner(
     @Body() body: CreateRestaurantAdminDTO,
@@ -58,6 +61,8 @@ export class RestaurantController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(IdempotencyInterceptor)
+  @Idempotency({ strict: true })
   @Patch(':id')
   async updateRestaurant(
     @Param('id', ParseIntPipe) id: number,
@@ -81,6 +86,8 @@ export class RestaurantController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(IdempotencyInterceptor)
+  @Idempotency({ strict: true })
   @Patch(':id/status')
   async updateStatus(
     @Param('id', ParseIntPipe) id: number,

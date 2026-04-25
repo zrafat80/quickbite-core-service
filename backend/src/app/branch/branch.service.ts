@@ -11,6 +11,10 @@ import { BRANCH_ERRORS } from './branch.constants';
 import { RESTAURANT_ERRORS } from 'src/app/restaurant/restaurant.constants';
 import { Knex } from 'knex';
 
+// 📍 Import the Parsers and Builder
+import { parsePaginationQuery, parseFilters } from '../../lib/pagination/query-parser'; // Adjust path
+import { buildPaginationResult } from '../../lib/pagination/cursor-pagination'; // Adjust path
+
 @Injectable()
 export class BranchService {
   // 1. Inject BOTH repositories so we can verify the restaurant ownership
@@ -19,10 +23,31 @@ export class BranchService {
     private readonly restaurantService: RestaurantService,
   ) {}
 
-  // 2. Standard class method instead of arrow function
-  async findNearby(lat: number, lng: number) {
-    const rows = await this.branchRepo.findNearbyBranches(lat, lng);
-    return rows;
+  // 2. Standard class method instead of arrow function (UPGRADED WITH PAGINATION)
+  async findNearby(lat: number, lng: number, queryParams: any) {
+    // Dictionary: Notice the 'b.' prefix because this query has a JOIN!
+    const nearbyColumnMap = {
+      id: 'b.id',
+      createdAt: 'b.created_at',
+      isActive: 'b.is_active',
+      acceptOrders: 'b.accept_orders'
+    };
+
+    const allowedFilters = ['isActive', 'acceptOrders'];
+
+    // Shield
+    const pagination = parsePaginationQuery(queryParams, nearbyColumnMap);
+    const filters = parseFilters(queryParams, allowedFilters, nearbyColumnMap);
+    console.log(filters);
+    console.log(pagination);
+    const rows = await this.branchRepo.findNearbyBranches(
+      lat, 
+      lng, 
+      pagination, 
+      filters
+    );
+
+    return buildPaginationResult(rows, pagination.limit, pagination.apiSortBy);
   }
 
   async create(
@@ -40,9 +65,6 @@ export class BranchService {
     }
 
     // 4. Security Check
-    // Note: In NestJS HTTP status codes:
-    // 401 Unauthorized = "You are not logged in"
-    // 403 Forbidden = "You are logged in, but you don't have permission to do this"
     if (
       userRole !== SystemRole.SYSTEM_ADMIN &&
       Number(restaurant.ownerId) !== Number(userId)
@@ -70,9 +92,32 @@ export class BranchService {
 
     return branch;
   }
-  // 📍 GET /restaurants/:restaurantId/branches
-  async findByRestaurant(restaurantId: number) {
-    return this.branchRepo.findBranchesByRestaurant(restaurantId);
+
+  // 📍 GET /restaurants/:restaurantId/branches (UPGRADED WITH PAGINATION)
+  async findByRestaurant(restaurantId: number, queryParams: any) {
+    
+    // Standard map since there are no JOINs in this query
+    const branchColumnMap = {
+      id: 'id',
+      createdAt: 'created_at',
+      isActive: 'is_active',
+      countryCode: 'country_code',
+      acceptOrders: 'accept_orders'
+    };
+
+    const allowedFilters = ['isActive', 'countryCode', 'acceptOrders'];
+
+    // Shield
+    const pagination = parsePaginationQuery(queryParams, branchColumnMap);
+    const filters = parseFilters(queryParams, allowedFilters, branchColumnMap);
+
+    const rows = await this.branchRepo.findBranchesByRestaurant(
+      restaurantId, 
+      pagination, 
+      filters
+    );
+
+    return buildPaginationResult(rows, pagination.limit, pagination.apiSortBy);
   }
 
   // 📍 PATCH /branches/:id
@@ -117,6 +162,7 @@ export class BranchService {
 
     return this.branchRepo.updateBranchStatus(id, data);
   }
+
   async verifyBranchesBelongToRestaurant(
     branchIds: number[],
     restaurantId: number,

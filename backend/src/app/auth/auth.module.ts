@@ -10,14 +10,12 @@ import { PasswordResetRepository } from './repository/password-reset.repository'
 import { UserModule } from 'src/app/user/user.module';
 import { RestaurantService } from 'src/app/restaurant/restaurant.service';
 import { RestaurantModule } from 'src/app/restaurant/restaurant.module';
+import { EmailModule } from 'src/lib/email/email.module';
+ 
 @Global()
 @Module({
   // 1. Imports: We need ConfigModule so AuthUtilsService can use ConfigService!
-  imports: [
-    ConfigModule,
-    forwardRef(() => UserModule),
-    forwardRef(() => RestaurantModule),
-  ],
+  imports: [ConfigModule, EmailModule, UserModule, forwardRef(() => RestaurantModule)],
 
   // 2. Controllers: The entry points for your HTTP requests
   controllers: [AuthController],

@@ -2,20 +2,32 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import { DatabaseErrorFilter } from './common/filters/database-error.filter';
-import { SuccessInterceptor } from './common/interceptors/success.interceptor';
+import { DatabaseErrorFilter } from './lib/filters/database-error.filter';
+import { SuccessInterceptor } from './lib/interceptors/success.interceptor';
 import cookieParser from 'cookie-parser';
-
+import { ConfigService } from '@nestjs/config';
+import helmet from 'helmet';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
+  const configService = app.get(ConfigService);
+  const origin = configService.get<string>('corsOrigins');
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          // Allow Swagger UI to load its scripts and styles
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'validator.swagger.io'],
+        },
+      },
+    }),
+  );
   // ✅ CORS Setup
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'http://localhost:3001',
-    ],
+    origin,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,

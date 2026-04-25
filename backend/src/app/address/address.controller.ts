@@ -14,7 +14,7 @@ import {
 import { Request } from 'express';
 import { AddressService } from './address.service';
 import { CreateAddressDTO } from './dto/create-address.dto';
-import { JwtAuthGuard } from 'src/common/middleware/guards/jwtGuard';
+import { JwtAuthGuard } from 'src/lib/middleware/guards/jwtGuard';
 import { UpdateAddressDTO } from './dto/update-address.dto';
 @Controller('customer/addresses')
 export class AddressController {

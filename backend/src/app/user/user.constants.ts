@@ -2,7 +2,8 @@
 
 export const USER_ERRORS = {
   USER_NOT_FOUND: 'User not found',
-  USER_INACTIVE: 'This user account has been deactivated', // Adding a common one for later!
+  USER_INACTIVE: 'This user account has been deactivated',
+  USER_ALREADY_EXISTS: 'User Already Exists' // Adding a common one for later!
 } as const;
 
 // src/user/constants/user.constants.ts

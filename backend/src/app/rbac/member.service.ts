@@ -20,9 +20,13 @@ import {
 } from '@nestjs/common';
 import { RBAC_ERRORS } from './rbac.constants';
 import { AuthUtilsService } from 'src/app/auth/auth-utils.service';
-import { TimeUtils } from 'src/common/utils/time.utils';
+import { TimeUtils } from 'src/pkg/utils/time.utils';
 import { BranchService } from 'src/app/branch/branch.service';
 import { RestaurantMember } from './entity/restaurant-member.entity';
+import { UserService } from '../user/user.service';
+import { memberInvitationEmail } from './templates/member-invitation';
+import { IEmailProvider } from 'src/lib/email/email.interface';
+import { EMAIL_PROVIDER_TOKEN } from 'src/lib/email/email.constants';
 
 @Injectable()
 export class MemberService {
@@ -31,11 +35,14 @@ export class MemberService {
     private readonly authService: AuthService,
     private readonly authUtilsService: AuthUtilsService,
     private readonly branchService: BranchService,
+    private readonly userService: UserService,
     private readonly roleRepo: RoleRepository,
     private readonly restaurantMemberRepo: RestaurantMemberRepository,
     private readonly memberBranchRepo: MemberBranchRepository,
     private readonly permissionRepo: PermissionRepo, // 🌟 Injected PermissionRepo
     @Inject('KNEX_CONNECTION') private readonly knex: Knex,
+    @Inject(EMAIL_PROVIDER_TOKEN)
+    private readonly emailProvider: IEmailProvider,
   ) {}
   async createOwnerMember(
     restaurantId: number,
@@ -70,10 +77,10 @@ export class MemberService {
       throw new NotFoundException(RBAC_ERRORS.ROLE_NOT_FOUND);
     }
 
-    // 🌟 1. Default branchIds to empty array if not provided
+    // 1. Default branchIds to empty array if not provided
     const branchIds = data.branchIds || [];
 
-    // 🌟 2. Pre-validate branch ownership BEFORE opening the transaction
+    // 2. Pre-validate branch ownership BEFORE opening the transaction
     if (branchIds.length > 0) {
       const isValid = await this.branchService.verifyBranchesBelongToRestaurant(
         branchIds,
@@ -85,9 +92,13 @@ export class MemberService {
     }
 
     const trx = await this.knex.transaction();
+    let user;
+    let member;
+    let otp;
+
     try {
       const now = new Date();
-      const user = await this.authService.hashAndCreateUser(
+      user = await this.userService.hashAndCreateUser(
         {
           email: data.email,
           name: data.name,
@@ -101,7 +112,7 @@ export class MemberService {
         now,
       );
 
-      const member = await this.restaurantMemberRepo.createRestaurantMember(
+      member = await this.restaurantMemberRepo.createRestaurantMember(
         {
           restaurantId,
           userId: user.id,
@@ -113,7 +124,7 @@ export class MemberService {
         trx,
       );
 
-      // 🌟 3. Insert branches (already validated above)
+      // 3. Insert branches (already validated above)
       if (branchIds.length > 0) {
         await this.memberBranchRepo.setMemberBranches(
           member.id,
@@ -123,26 +134,39 @@ export class MemberService {
         );
       }
 
-      const otp = await this.authUtilsService.generateAndSaveOTP(
+      otp = await this.authUtilsService.generateAndSaveOTP(
         user.id,
         TimeUtils.hoursToMs(1),
         trx,
         now,
       );
 
-      console.log(`mocked email sent ${otp}`);
-
+      // 🌟 DATABASE WORK IS DONE. COMMIT IT NOW!
       await trx.commit();
-
-      // 🌟 4. Return a proper response object
-      return {
-        message: 'Member invited successfully',
-        data: member,
-      };
     } catch (err) {
       await trx.rollback();
-      throw err;
+      throw err; // Only DB errors will trigger a rollback and a 500 response
     }
+
+    // 🌟 FIRE AND FORGET EMAIL (Completely outside the transaction)
+    const emailContent = memberInvitationEmail(otp, data.role);
+
+    // Notice there is NO 'await' here!
+    this.emailProvider
+      .send(user.email, emailContent.subject, emailContent.html)
+      .catch((emailError) => {
+        // If Mailjet crashes 3 seconds from now, it logs quietly here without breaking the app.
+        console.error(
+          `🚨 BACKGROUND EMAIL FAILED for ${user.email}:`,
+          emailError.message,
+        );
+      });
+
+    // 🌟 Return immediately to the frontend!
+    return {
+      message: 'Member invited successfully',
+      data: member,
+    };
   }
 
   async listMembers(restaurantId: number) {

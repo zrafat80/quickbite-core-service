@@ -25,4 +25,11 @@ export default () => ({
     refreshSecret: process.env.JWT_REFRESH_SECRET as string,
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN as string,
   },
+  corsOrigins: process.env.CORS_ORIGNS?.split(','),
+  mailjet: {
+    apiKey: process.env.MAILJET_API_KEY as string,
+    secretKey: process.env.MAILJET_SECRET_KEY as string,
+    fromEmail: process.env.MAILJET_FROM_EMAIL as string,
+    fromName: process.env.MAILJET_FROM_NAME as string,
+  },
 });

@@ -11,6 +11,7 @@ import { BranchModule } from 'src/app/branch/branch.module';
 import { RestaurantModule } from 'src/app/restaurant/restaurant.module';
 import { PermissionCacheService } from './permission-cache.service';
 import { PermissionRepo } from './repository/permission.repository';
+import { UserModule } from '../user/user.module';
 
 // If you have a centralized RBAC Service or Guards, they go here too!
 // import { RbacService } from './rbac.service';
@@ -18,7 +19,7 @@ import { PermissionRepo } from './repository/permission.repository';
 
 @Global() // 🌟 This makes RBAC available everywhere automatically!
 @Module({
-  imports: [AuthModule, BranchModule],
+  imports: [UserModule, BranchModule],
   controllers: [RbacController],
   providers: [
     RoleRepository,

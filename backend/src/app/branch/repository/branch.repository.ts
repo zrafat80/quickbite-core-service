@@ -1,6 +1,12 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Knex } from 'knex';
 import { Branch } from '../entity/branch.entity'; // Adjust path if needed
+import { 
+  PaginationParams, 
+  FilterParams, 
+  applyCursorPagination, 
+  applyFilters 
+} from '../../../lib/pagination/cursor-pagination'; // Adjust path
 
 const BRANCH_COLUMNS = [
   'id',
@@ -80,49 +86,62 @@ export class BranchRepository {
     return this.toEntity(row);
   }
 
-  // 4. The PostGIS Query!
-  // Note: I changed the return type to Promise<any[]> because this query returns
-  // joined data (r.name, r.logo_url). If you map this through toEntity(), you lose the restaurant data!
-  async findNearbyBranches(lat: number, lng: number): Promise<any[]> {
-    const result = await this.knex.raw(
-      `
-       SELECT 
-         b.id,
-         b.restaurant_id,
-         b.address_text,
-         b.label,
-         b.lat,
-         b.lng,
-         b.is_active,
-         b.accept_orders,
-         b.currency,
-         r.name as restaurant_name, -- Aliased for clarity
-         r.logo_url as restaurant_logo_url -- Aliased for clarity
-       FROM restaurant_branches b 
-       JOIN restaurants r ON b.restaurant_id = r.id
-       WHERE b.is_active = true 
-         AND r.status = 'active'
-         AND ST_DWithin(b.location, ST_MakePoint(?, ?)::geography, b.delivery_radius * 1000)
-    `,
-      [lng, lat],
-    ); // 🌟 Lng first, Lat second!
+  // 4. The PostGIS Query (UPGRADED WITH PAGINATION)
+  async findNearbyBranches(
+    lat: number, 
+    lng: number,
+    pagination: PaginationParams,
+    filters: FilterParams[]
+  ): Promise<any[]> {
+    
+    // Convert to a Knex Builder so we can attach pagination
+    let query = this.knex('restaurant_branches as b')
+      .join('restaurants as r', 'b.restaurant_id', 'r.id')
+      .select(
+        'b.id',
+        'b.restaurant_id',
+        'b.address_text',
+        'b.label',
+        'b.lat',
+        'b.lng',
+        'b.is_active',
+        'b.accept_orders',
+        'b.currency',
+        'b.created_at', // Mapped for cursor
+        'r.name as restaurant_name',
+        'r.logo_url as restaurant_logo_url'
+      )
+      .where('b.is_active', true)
+      .andWhere('r.status', 'active');
 
-    return result.rows.map((row: any) => ({
+    // Inject the raw PostGIS math!
+    query = query.whereRaw(
+      'ST_DWithin(b.location, ST_MakePoint(?, ?)::geography, b.delivery_radius * 1000)',
+      [lng, lat]
+    );
+
+    // Apply the pagination engine!
+    query = applyFilters(query, filters);
+    query = applyCursorPagination(query, pagination);
+
+    const rows = await query;
+
+    return rows.map((row: any) => ({
       id: row.id,
-      restaurantId: Number(row.restaurant_id), // Good practice to ensure it's a number
+      restaurantId: Number(row.restaurant_id),
       addressText: row.address_text,
       label: row.label,
-      // Postgres returns decimals as strings to prevent JS float precision loss.
-      // We convert them back to numbers for the frontend map markers.
       lat: Number(row.lat),
       lng: Number(row.lng),
       isActive: row.is_active,
       acceptOrders: row.accept_orders,
       currency: row.currency,
+      createdAt: row.created_at, // Map for the cursor!
       restaurantName: row.restaurant_name,
       restaurantLogoUrl: row.restaurant_logo_url,
     }));
   }
+
   // 📍 Helper to find a single branch
   async findById(id: number): Promise<Branch | null> {
     const row = await this.knex('restaurant_branches').where('id', id).first();
@@ -130,12 +149,23 @@ export class BranchRepository {
     return this.toEntity(row);
   }
 
-  // 📍 GET /restaurants/:restaurantId/branches
-  async findBranchesByRestaurant(restaurantId: number): Promise<Branch[]> {
-    const rows = await this.knex('restaurant_branches').where(
+  // 📍 GET /restaurants/:restaurantId/branches (UPGRADED WITH PAGINATION)
+  async findBranchesByRestaurant(
+    restaurantId: number,
+    pagination: PaginationParams,
+    filters: FilterParams[]
+  ): Promise<Branch[]> {
+    
+    let query = this.knex('restaurant_branches').where(
       'restaurant_id',
       restaurantId,
     );
+
+    // Attach our engine
+    query = applyFilters(query, filters);
+    query = applyCursorPagination(query, pagination);
+
+    const rows = await query;
 
     // We reuse your brilliant private toEntity() mapper to convert to camelCase!
     return rows.map((row) => this.toEntity(row));
@@ -143,7 +173,6 @@ export class BranchRepository {
 
   // 📍 PATCH /branches/:id (Owner/Admin)
   async updateBranch(id: number, data: Partial<any>): Promise<Branch> {
-    // Map camelCase DTO back to snake_case for the database
     const updateData: any = { updated_at: this.knex.fn.now() };
 
     if (data.label !== undefined) updateData.label = data.label;
@@ -190,6 +219,7 @@ export class BranchRepository {
       commission: Number(updatedRow.commission),
     };
   }
+  
   async verifyBranchesBelongToRestaurant(
     branchIds: number[],
     restaurantId: number,
@@ -203,8 +233,6 @@ export class BranchRepository {
       .count('id as count')
       .first();
 
-    // If the count of found branches exactly matches the length of the array they sent,
-    // it means 100% of the branches belong to their restaurant.
     const foundCount = Number(result?.count || 0);
     return foundCount === branchIds.length;
   }

@@ -20,8 +20,11 @@ import { ForgetPasswordDTO, ResetPasswordDTO } from './dto/password.dto';
 import { Knex } from 'knex';
 import { RestaurantService } from 'src/app/restaurant/restaurant.service';
 import { error } from 'console';
-import { TimeUtils } from 'src/common/utils/time.utils';
+import { TimeUtils } from 'src/pkg/utils/time.utils';
 import { MemberService } from 'src/app/rbac/member.service';
+import { passwordResetEmail } from './templates/password-reset';
+import { EMAIL_PROVIDER_TOKEN } from 'src/lib/email/email.constants';
+import { IEmailProvider } from 'src/lib/email/email.interface';
 @Injectable()
 export class AuthService {
   // 1. Inject the dependencies via the constructor
@@ -31,47 +34,11 @@ export class AuthService {
     private readonly authUtils: AuthUtilsService,
     private readonly memberService: MemberService,
     private readonly passwordResetRepo: PasswordResetRepository,
-
+    @Inject(EMAIL_PROVIDER_TOKEN)
+    private readonly emailProvider: IEmailProvider,
     @Inject(forwardRef(() => RestaurantService))
     private readonly restaurantService: RestaurantService,
   ) {}
-
-  async hashAndCreateUser(
-    data: any,
-    role: SystemRole,
-    trx?: Knex.Transaction,
-    now: Date = new Date(),
-  ) {
-    // 1. Check if user exists using the injected repository
-    const existing = await this.userService.checkUserExists(
-      data.email,
-      data.phone,
-      trx,
-    );
-
-    // 2. If exists, throw standard ConflictException
-    if (existing) {
-      throw new ConflictException(AUTH_ERRORS.USER_ALREADY_EXISTS);
-    }
-
-    // 3. Hash Password using injected utils
-    const hashedPassword = await this.authUtils.hashPassword(data.password);
-
-    // 4. Create user
-
-    return await this.userService.createUser(
-      {
-        email: data.email,
-        phone: data.phone,
-        name: data.name,
-        passwordHash: hashedPassword,
-        systemRole: role,
-        createdAt: now,
-        updatedAt: now,
-      },
-      trx,
-    );
-  }
 
   async register(data: RegisterDTO) {
     if (data.role === SystemRole.SYSTEM_ADMIN) {
@@ -85,7 +52,7 @@ export class AuthService {
 
     try {
       // 🌟 Use the extracted helper to do the heavy security lifting
-      user = await this.hashAndCreateUser(data, data.role, trx);
+      user = await this.userService.hashAndCreateUser(data, data.role, trx);
 
       if (data.role == SystemRole.RESTAURANT_USER) {
         // Check if it's undefined, null, OR if it's missing the required 'name' field
@@ -163,7 +130,7 @@ export class AuthService {
       const memberData = await this.memberService.findRestaurantMemberWithRole(
         user.id,
       );
-      console.log(memberData, 'dd');
+
       let branchIds = {};
       if (memberData) {
         branchIds = await this.memberService.findBranchIdsByMemberId(
@@ -216,7 +183,14 @@ export class AuthService {
     );
 
     // TODO: Send real email later
-    console.log(`[MOCK EMAIL] Password reset OTP for ${user.email} is: ${otp}`);
+    const emailContent = passwordResetEmail(otp);
+
+    // 4. Send the Email
+    await this.emailProvider.send(
+      user.email,
+      emailContent.subject,
+      emailContent.html,
+    );
 
     return {
       message: 'If an account exists, a password reset email has been sent.',

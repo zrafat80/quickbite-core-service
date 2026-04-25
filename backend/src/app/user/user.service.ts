@@ -1,14 +1,23 @@
 // src/user/user.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { UserRepository } from './repository/user.repository';
 import { User } from './entity/user.entity';
 import { USER_ERRORS, USER_MESSAGES } from './user.constants';
 import { UpdateProfileDTO } from './dto/user-profile.dto';
 import { Knex } from 'knex';
+import { SystemRole } from './enums';
+import { AuthUtilsService } from '../auth/auth-utils.service';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly userRepo: UserRepository) {}
+  constructor(
+    private readonly userRepo: UserRepository,
+    private readonly authUtils: AuthUtilsService,
+  ) {}
 
   // Expose a clean method to check if a user exists
   async checkUserExists(
@@ -66,5 +75,41 @@ export class UserService {
       message: USER_MESSAGES.PROFILE_UPDATED,
       user: updatedUser,
     };
+  }
+  async hashAndCreateUser(
+    data: any,
+    role: SystemRole,
+    trx?: Knex.Transaction,
+    now: Date = new Date(),
+  ) {
+    // 1. Check if user exists using the injected repository
+    const existing = await this.userRepo.findUserExistsByEmailOrPhone(
+      data.email,
+      data.phone,
+      trx,
+    );
+
+    // 2. If exists, throw standard ConflictException
+    if (existing) {
+      throw new ConflictException(USER_ERRORS.USER_ALREADY_EXISTS);
+    }
+
+    // 3. Hash Password using injected utils
+    const hashedPassword = await this.authUtils.hashPassword(data.password);
+
+    // 4. Create user
+
+    return await this.userRepo.createUser(
+      {
+        email: data.email,
+        phone: data.phone,
+        name: data.name,
+        passwordHash: hashedPassword,
+        systemRole: role,
+        createdAt: now,
+        updatedAt: now,
+      },
+      trx,
+    );
   }
 }

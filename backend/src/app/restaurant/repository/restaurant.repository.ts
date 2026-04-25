@@ -1,6 +1,12 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Knex } from 'knex';
 import { RestaurantEntity } from '../entity/restaurant.entity';
+import { 
+  PaginationParams, 
+  FilterParams, 
+  applyCursorPagination, 
+  applyFilters 
+} from '../../../lib/pagination/cursor-pagination'; // Adjust path
 
 // Safe explicit column selection
 const RESTAURANT_COLUMNS = [
@@ -34,8 +40,18 @@ export class RestaurantRepository {
     });
   }
 
-  async findAllRestaurants(): Promise<RestaurantEntity[]> {
-    const rows = await this.knex('restaurants').select(RESTAURANT_COLUMNS);
+  // 📍 UPGRADED WITH PAGINATION
+  async findAllRestaurants(
+    pagination: PaginationParams,
+    filters: FilterParams[]
+  ): Promise<RestaurantEntity[]> {
+    let query = this.knex('restaurants').select(RESTAURANT_COLUMNS);
+
+    // Apply the pagination engine!
+    query = applyFilters(query, filters);
+    query = applyCursorPagination(query, pagination);
+
+    const rows = await query;
     return rows.map((row) => this.toEntity(row));
   }
 

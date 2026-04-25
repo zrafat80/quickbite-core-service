@@ -8,20 +8,20 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core'; // <-- Add APP_INTERCEPTOR
-import { SuccessInterceptor } from './common/interceptors/success.interceptor'; // <-- Import your file (adjust path if needed)
+import { SuccessInterceptor } from './lib/interceptors/success.interceptor'; // <-- Import your file (adjust path if needed)
 // Controllers & Services
 
 // Common & Core
-import { DatabaseModule } from './common/database.module';
-import { CorrelationMiddleware } from './common/middleware/correlation.middleware';
-import { RequestContextService } from './common/context/request-context.service';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { DatabaseModule } from './lib/database.module';
+import { CorrelationMiddleware } from './lib/middleware/correlation.middleware';
+import { RequestContextService } from './lib/context/request-context.service';
+import { HttpExceptionFilter } from './lib/filters/http-exception.filter';
 
 // External Packages
 import { TerminusModule } from '@nestjs/terminus';
 import { CacheModule } from '@nestjs/cache-manager';
 import { createKeyv } from '@keyv/redis';
-import appConfig from './common/config/app.config';
+import appConfig from './lib/config/app.config';
 import { HealthModule } from './app/health/health.module';
 import { AuthModule } from './app/auth/auth.module';
 import { UserModule } from './app/user/user.module';
@@ -30,6 +30,7 @@ import { RestaurantModule } from './app/restaurant/restaurant.module';
 import { BranchModule } from './app/branch/branch.module';
 import { ProductModule } from './app/product/product.module';
 import { RbacModule } from './app/rbac/rbac.module';
+import { EmailModule } from './lib/email/email.module';
 
 @Module({
   imports: [
@@ -68,6 +69,8 @@ import { RbacModule } from './app/rbac/rbac.module';
     BranchModule,
     ProductModule,
     RbacModule,
+    
+    EmailModule,
     // Add your new domain modules (Users, Orders, etc.) here as you build them
   ],
   controllers: [],

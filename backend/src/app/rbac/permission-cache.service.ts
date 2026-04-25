@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PermissionRepo } from './repository/permission.repository'; // Adjust the import path/name if you renamed it!
-import { TimeUtils } from 'src/common/utils/time.utils'; // Using your existing TimeUtils
+import { TimeUtils } from 'src/pkg/utils/time.utils'; // Using your existing TimeUtils
 
 @Injectable()
 export class PermissionCacheService {
-  private cache: Map<string, { permissions: string[]; cachedAt: number }> = new Map();
-  
+  private cache: Map<string, { permissions: string[]; cachedAt: number }> =
+    new Map();
+
   // Using the TimeUtils from your previous context for consistency!
   private readonly TTL = TimeUtils.hoursToMs(1);
 
@@ -20,7 +21,8 @@ export class PermissionCacheService {
     }
 
     // 2. Cache Miss: Fetch from database using the injected repository
-    const permissions = await this.permissionRepo.getPermissionsByRoleName(roleName);
+    const permissions =
+      await this.permissionRepo.getPermissionsByRoleName(roleName);
 
     // 3. Save to Cache
     this.cache.set(roleName, { permissions, cachedAt: Date.now() });
@@ -28,7 +30,11 @@ export class PermissionCacheService {
     return permissions;
   }
 
-  hasPermission(permissions: string[], resource: string, action: string): boolean {
+  hasPermission(
+    permissions: string[],
+    resource: string,
+    action: string,
+  ): boolean {
     return permissions.includes(`${resource}:${action}`);
   }
 

@@ -7,7 +7,7 @@ import { AuthModule } from 'src/app/auth/auth.module';
 import { UserModule } from 'src/app/user/user.module';
 
 @Module({
-  imports: [forwardRef(() => AuthModule)],
+  imports: [UserModule],
 
   controllers: [RestaurantController],
   // Provide the service and the repository so they know about each other

@@ -20,6 +20,11 @@ import { CreateRestaurantAdminDTO } from './dto/create-restaurant-admin.dto';
 import { UpdateRestaurantDTO } from './dto/update-restaurant.dto';
 import { USER_ERRORS } from 'src/app/user/user.constants';
 import { AuthService } from 'src/app/auth/auth.service';
+import { User } from '../user/entity/user.entity';
+
+// 📍 Import the Parsers and Builder
+import { parsePaginationQuery, parseFilters } from '../../lib/pagination/query-parser'; // Adjust path
+import { buildPaginationResult } from '../../lib/pagination/cursor-pagination'; // Adjust path
 
 @Injectable()
 export class RestaurantService {
@@ -30,7 +35,7 @@ export class RestaurantService {
     // 🌟 Inject UserRepo to check and create users
     @Inject('KNEX_CONNECTION') private readonly knex: Knex,
     @Inject(forwardRef(() => AuthService))
-    private readonly authService: AuthService,
+    private readonly userService: UserService,
   ) {}
 
   // 2. Use standard async class methods instead of arrow functions
@@ -59,9 +64,29 @@ export class RestaurantService {
     return result;
   }
 
-  async findAll() {
-    const result = await this.restaurantRepo.findAllRestaurants();
-    return result;
+  // 📍 UPGRADED WITH PAGINATION
+  async findAll(queryParams: any) {
+    // Dictionary: Map frontend camelCase to database snake_case
+    const columnMap = {
+      id: 'id',
+      ownerId: 'owner_id',
+      name: 'name',
+      status: 'status',
+      primaryCountry: 'primary_country',
+      createdAt: 'created_at',
+      updatedAt: 'updated_at',
+      statusUpdatedAt: 'status_updated_at'
+    };
+
+    // Shield: Allowed fields for filtering
+    const allowedFilters = ['status', 'primaryCountry', 'ownerId', 'name', 'createdAt'];
+
+    const pagination = parsePaginationQuery(queryParams, columnMap);
+    const filters = parseFilters(queryParams, allowedFilters, columnMap);
+
+    const restaurants = await this.restaurantRepo.findAllRestaurants(pagination, filters);
+
+    return buildPaginationResult(restaurants, pagination.limit, pagination.apiSortBy);
   }
 
   async findRestaurantById(id: number) {
@@ -71,6 +96,7 @@ export class RestaurantService {
     }
     return restaurant;
   }
+  
   async createWithOwner(userRole: SystemRole, data: CreateRestaurantAdminDTO) {
     // 1. Security Check: Only SYSTEM_ADMIN can hit this logic
     if (userRole !== SystemRole.SYSTEM_ADMIN) {
@@ -84,7 +110,7 @@ export class RestaurantService {
 
     try {
       // 5a. Create the Owner User (Passing the transaction!)
-      const newOwner = await this.authService.hashAndCreateUser(
+      const newOwner = await this.userService.hashAndCreateUser(
         data.owner,
         SystemRole.RESTAURANT_USER,
         trx,
@@ -122,6 +148,7 @@ export class RestaurantService {
       throw error;
     }
   }
+  
   async update(
     id: number,
     userId: number,

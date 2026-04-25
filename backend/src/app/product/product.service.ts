@@ -1,4 +1,9 @@
-import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Knex } from 'knex';
 import { ProductRepository } from './repository/product.repository';
 import { CategoryRepository } from './repository/category.repository';
@@ -6,10 +11,15 @@ import { RestaurantService } from '../restaurant/restaurant.service'; // Adjust 
 import { CreateProductDTO } from './dto/product.dto';
 import { SystemRole } from '../user/enums'; // Adjust path
 import { PRODUCT_ERRORS } from './product.constants';
-import { NotFoundException } from '@nestjs/common';
 import { UpdateProductDTO } from './dto/update-product.dto';
-import { ProductBranchDetails } from './entity/product-branch-details.entity';
 import { ProductBranchDetailsRepository } from './repository/product-branch-details.repository';
+
+// 📍 Import the Parsers and Builder
+import {
+  parsePaginationQuery,
+  parseFilters,
+} from '../../lib/pagination/query-parser'; // Adjust path
+import { buildPaginationResult } from '../../lib/pagination/cursor-pagination'; // Adjust path
 
 @Injectable()
 export class ProductService {
@@ -27,7 +37,6 @@ export class ProductService {
     userRole: SystemRole,
     data: CreateProductDTO,
   ) {
-    // 1. Security Guard: Verify Restaurant exists and check Ownership
     const restaurant =
       await this.restaurantService.findRestaurantById(restaurantId);
 
@@ -38,15 +47,12 @@ export class ProductService {
       throw new ForbiddenException(PRODUCT_ERRORS.NO_PERMISSION);
     }
 
-    // 2. Start a transaction (in case we need to create a category AND a product)
     const trx = await this.knex.transaction();
 
     try {
       let categoryId: number | null = null;
 
-      // 3. Resolve the Category (Find it, or Create it)
       if (data.categoryName) {
-        // We use ILike (case-insensitive) or just strictly match the name
         let category = await this.categoryRepo.findByNameAndRestaurant(
           data.categoryName,
           restaurantId,
@@ -63,7 +69,6 @@ export class ProductService {
         categoryId = category.id;
       }
 
-      // 4. Create the Product
       const product = await this.productRepo.createProduct(
         {
           name: data.name,
@@ -75,7 +80,6 @@ export class ProductService {
         trx,
       );
 
-      // 5. Commit! (Your PostgreSQL trigger will fire automatically here to populate branch details!)
       await trx.commit();
 
       return product;
@@ -87,23 +91,46 @@ export class ProductService {
 
   // 📍 GET /restaurants/:restaurantId/categories
   async findCategories(restaurantId: number) {
-    // We can just return this directly for the public
     return this.categoryRepo.findCategoriesByRestaurant(restaurantId);
   }
 
-  // 📍 GET /branches/:branchId/products
-  async findByBranch(branchId: number) {
-    // This is the public customer view, it returns the joined data
-    return this.productRepo.findProductsByBranch(branchId);
+  // 📍 GET /branches/:branchId/products (UPGRADED WITH PAGINATION)
+  async findByBranch(branchId: number, queryParams: any) {
+    // 🌟 The Dictionary: Notice the 'p.' prefix because of the JOIN!
+    // We also map 'pbd.price' so users can sort by price!
+    const branchProductMap = {
+      id: 'p.id',
+      createdAt: 'p.created_at',
+      categoryId: 'p.category_id',
+      price: 'pbd.price',
+      isAvailable: 'pbd.is_available',
+    };
+
+    const allowedFilters = ['categoryId', 'isAvailable'];
+
+    const pagination = parsePaginationQuery(queryParams, branchProductMap);
+    const filters = parseFilters(queryParams, allowedFilters, branchProductMap);
+
+    const products = await this.productRepo.findProductsByBranch(
+      branchId,
+      pagination,
+      filters,
+    );
+
+    return buildPaginationResult(
+      products,
+      pagination.limit,
+      pagination.apiSortBy,
+    );
   }
 
-  // 📍 GET /restaurants/:restaurantId/products (Management View)
+  // 📍 GET /restaurants/:restaurantId/products (Management View - UPGRADED)
   async findByRestaurant(
     restaurantId: number,
     userId: number,
     userRole: SystemRole,
+    queryParams: any,
   ) {
-    // 1. Security Guard: Verify Restaurant exists and check Ownership
     const restaurant =
       await this.restaurantService.findRestaurantById(restaurantId);
 
@@ -116,8 +143,29 @@ export class ProductService {
       );
     }
 
-    // 2. Fetch and return
-    return this.productRepo.findProductsByRestaurant(restaurantId);
+    // Single table query, no prefixes needed!
+    const productMap = {
+      id: 'id',
+      createdAt: 'created_at',
+      categoryId: 'category_id',
+    };
+
+    const allowedFilters = ['categoryId'];
+
+    const pagination = parsePaginationQuery(queryParams, productMap);
+    const filters = parseFilters(queryParams, allowedFilters, productMap);
+
+    const products = await this.productRepo.findProductsByRestaurant(
+      restaurantId,
+      pagination,
+      filters,
+    );
+
+    return buildPaginationResult(
+      products,
+      pagination.limit,
+      pagination.apiSortBy,
+    );
   }
 
   // 📍 GET /products/:id
@@ -137,6 +185,7 @@ export class ProductService {
       updatedAt: product.updatedAt,
     };
   }
+
   async update(
     id: number,
     userId: number,

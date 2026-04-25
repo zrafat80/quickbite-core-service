@@ -8,6 +8,7 @@ import {
   Res,
   UnauthorizedException,
   Req,
+  UseInterceptors,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDTO } from './dto/register.dto';
@@ -15,12 +16,16 @@ import { LoginDTO } from './dto/login.dto';
 import { ForgetPasswordDTO, ResetPasswordDTO } from './dto/password.dto';
 import { Response } from 'express';
 import { Request } from 'express';
-import { TimeUtils } from 'src/common/utils/time.utils';
+import { TimeUtils } from 'src/pkg/utils/time.utils';
+import { IdempotencyInterceptor } from 'src/lib/idempotency/idempotency.interceptor';
+import { Idempotency } from 'src/lib/idempotency/idempotency.decorator';
 
 @Controller('auth') // Replaces authRouter[cite: 7]
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @UseInterceptors(IdempotencyInterceptor)
+  @Idempotency({ strict: true })
   @Post('register') // Replaces authRouter.post('/register', ...)[cite: 7]
   async register(
     @Body() body: RegisterDTO,
@@ -47,6 +52,9 @@ export class AuthController {
     // 2. Respond (NestJS automatically sets status to 201 for @Post requests)[cite: 9]
     return result;
   }
+
+  @UseInterceptors(IdempotencyInterceptor)
+  @Idempotency({ strict: false })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
@@ -80,17 +88,24 @@ export class AuthController {
     };
   }
 
+  @UseInterceptors(IdempotencyInterceptor)
+  @Idempotency({ strict: true })
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   async forgotPassword(@Body() body: ForgetPasswordDTO) {
     return this.authService.forgotPassword(body);
   }
 
+  @UseInterceptors(IdempotencyInterceptor)
+  @Idempotency({ strict: true })
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() body: ResetPasswordDTO) {
     return this.authService.resetPassword(body);
   }
+
+  @UseInterceptors(IdempotencyInterceptor)
+  @Idempotency({ strict: true })
   @Post('accept-invite')
   @HttpCode(HttpStatus.OK) // 🌟 Forces a 200 OK instead of default 201 Created
   async acceptInvite(@Body() data: ResetPasswordDTO) {
@@ -103,6 +118,8 @@ export class AuthController {
     };
   }
   @Post('refresh')
+  @UseInterceptors(IdempotencyInterceptor)
+  @Idempotency({ strict: false })
   @HttpCode(HttpStatus.OK)
   async refresh(
     @Req() req: Request,

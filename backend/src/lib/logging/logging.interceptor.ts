@@ -7,7 +7,7 @@ import {
 import { Observable, tap } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { DatabaseLoggerService } from './database-logger.service';
-import { RequestContextService } from '../../common/context/request-context.service';
+import { RequestContextService } from '../context/request-context.service';
 import { Request } from 'express';
 import { Log } from './log.interface';
 

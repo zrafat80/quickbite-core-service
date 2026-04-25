@@ -10,13 +10,19 @@ import {
   Patch,
   Query,
   BadRequestException,
+  UseInterceptors,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../common/middleware/guards/jwtGuard';
-import { BranchAccessGuard } from '../../common/middleware/guards/branch-access.guard'; // 🌟 Imported the Guard
+import { JwtAuthGuard } from '../../lib/middleware/guards/jwtGuard';
+import { BranchAccessGuard } from '../../lib/middleware/guards/branch-access.guard'; // 🌟 Imported the Guard
 import { ProductService } from './product.service';
 import { CreateProductDTO } from './dto/product.dto';
 import { UpdateProductDTO } from './dto/update-product.dto';
 import { PRODUCT_ERRORS } from './product.constants';
+import { UnifiedCacheInterceptor } from 'src/lib/cache/cache.interceptor';
+import { TimeUtils } from 'src/pkg/utils/time.utils';
+import { CacheTTL } from '@nestjs/cache-manager';
+import { IdempotencyInterceptor } from 'src/lib/idempotency/idempotency.interceptor';
+import { Idempotency } from 'src/lib/idempotency/idempotency.decorator';
 
 @Controller()
 export class ProductController {
@@ -29,11 +35,16 @@ export class ProductController {
     const data = await this.productService.findCategories(restaurantId);
     return { data };
   }
-
+  @UseInterceptors(UnifiedCacheInterceptor)
+  @CacheTTL(TimeUtils.hoursToMs(1))
   @Get('branches/:branchId/products')
-  async findByBranch(@Param('branchId', ParseIntPipe) branchId: number) {
-    const data = await this.productService.findByBranch(branchId);
-    return { data };
+  async findByBranch(
+    @Param('branchId', ParseIntPipe)
+    branchId: number,
+    @Query() queryParams: any,
+  ) {
+    const data = await this.productService.findByBranch(branchId, queryParams);
+    return data;
   }
 
   @UseGuards(JwtAuthGuard)
@@ -41,15 +52,18 @@ export class ProductController {
   async findByRestaurant(
     @Param('restaurantId', ParseIntPipe) restaurantId: number,
     @Req() req: any,
+    @Query() queryParams: any,
   ) {
     const data = await this.productService.findByRestaurant(
       restaurantId,
       req.user.userId,
       req.user.role,
+      queryParams,
     );
-    return { data };
+    return data;
   }
-
+  @UseInterceptors(UnifiedCacheInterceptor)
+  @CacheTTL(TimeUtils.hoursToMs(1))
   @Get('products/:id')
   async findById(@Param('id', ParseIntPipe) id: number) {
     const product = await this.productService.findById(id);
@@ -57,6 +71,8 @@ export class ProductController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(IdempotencyInterceptor)
+  @Idempotency({ strict: true })
   @Post('restaurants/:restaurantId/products')
   async createProduct(
     @Param('restaurantId', ParseIntPipe) restaurantId: number,
@@ -79,6 +95,8 @@ export class ProductController {
   // 🌟 FIX: Added BranchAccessGuard!
   // Because the URL uses ?branchId=X, our Guard will detect it and check permissions perfectly.
   @UseGuards(JwtAuthGuard, BranchAccessGuard)
+  @UseInterceptors(IdempotencyInterceptor)
+  @Idempotency({ strict: true })
   @Patch('products/:id')
   async updateProduct(
     @Param('id', ParseIntPipe) id: number,

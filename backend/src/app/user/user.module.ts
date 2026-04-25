@@ -6,7 +6,7 @@ import { UserController } from './user.controller';
 import { AuthModule } from 'src/app/auth/auth.module';
 
 @Module({
-  imports: [forwardRef(() => AuthModule)],
+  imports: [],
   // 1. Providers: Everything this specific module needs to build and run internally.
   // NestJS will build the UserRepository first, then inject it into the UserService.
   controllers: [UserController],

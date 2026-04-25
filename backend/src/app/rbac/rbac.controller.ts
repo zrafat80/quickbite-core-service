@@ -18,10 +18,10 @@ import {
 } from './dto/member.dto'; // Adjust path if needed
 
 // Guards & Decorators
-import { JwtAuthGuard } from 'src/common/middleware/guards/jwtGuard';
-import { RestaurantMemberGuard } from 'src/common/middleware/guards/restaurant-member.guard';
-import { PermissionsGuard } from 'src/common/middleware/guards/permissions.guard';
-import { RequirePermissions } from 'src/common/decorators/permissions.decorator';
+import { JwtAuthGuard } from 'src/lib/middleware/guards/jwtGuard';
+import { RestaurantMemberGuard } from 'src/lib/middleware/guards/restaurant-member.guard';
+import { PermissionsGuard } from 'src/lib/middleware/guards/permissions.guard';
+import { RequirePermissions } from 'src/lib/decorators/permissions.decorator';
 
 @Controller('')
 export class RbacController {
