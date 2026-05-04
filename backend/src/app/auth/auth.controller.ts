@@ -80,12 +80,7 @@ export class AuthController {
     });
 
     // 4. Return the user data (you don't need to send the tokens in the JSON body anymore!)
-    return {
-      message: result.message,
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
-      user: result.user,
-    };
+    return result;
   }
 
   @UseInterceptors(IdempotencyInterceptor)

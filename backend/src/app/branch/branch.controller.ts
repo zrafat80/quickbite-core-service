@@ -77,10 +77,7 @@ export class BranchController {
       data,
     );
 
-    return {
-      message: 'Branch added',
-      branch,
-    };
+    return branch;
   }
 
   // 📍 PATCH /branches/:branchId (Owner/Admin)
@@ -101,10 +98,7 @@ export class BranchController {
       req.user.role,
       data,
     );
-    return {
-      message: 'Branch updated successfully',
-      branch,
-    };
+    return branch;
   }
 
   // 📍 PATCH /branches/:branchId/status (Admin Only)
@@ -112,7 +106,7 @@ export class BranchController {
   @UseGuards(JwtAuthGuard, BranchAccessGuard)
   @RequirePermissions('core:branch', 'update')
   @UseInterceptors(IdempotencyInterceptor)
-  @Idempotency({ strict: true })  
+  @Idempotency({ strict: true })
   @Patch('branches/:branchId/status')
   async updateStatus(
     @Param('branchId', ParseIntPipe) branchId: number, // 🌟 Updated Param name
@@ -124,9 +118,6 @@ export class BranchController {
       req.user.role,
       data,
     );
-    return {
-      message: 'Branch status updated successfully',
-      branch,
-    };
+    return branch;
   }
 }

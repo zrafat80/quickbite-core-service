@@ -3,7 +3,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DatabaseErrorFilter } from './lib/filters/database-error.filter';
-import { SuccessInterceptor } from './lib/interceptors/success.interceptor';
 import cookieParser from 'cookie-parser';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
@@ -56,8 +55,8 @@ async function bootstrap() {
   // ✅ Filters
   app.useGlobalFilters(new DatabaseErrorFilter());
 
-  // ✅ Interceptors
-  app.useGlobalInterceptors(new SuccessInterceptor());
+  // SuccessInterceptor is registered globally via APP_INTERCEPTOR in
+  // app.module.ts — keep only ONE registration to avoid double-wrapped envelopes.
   app.enableShutdownHooks();
   const port = process.env.PORT || 3000;
   await app.listen(port);

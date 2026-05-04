@@ -34,10 +34,8 @@ export class RestaurantController {
   @Get(':id')
   async getRestaurantById(@Param('id', ParseIntPipe) id: number) {
     const restaurant = await this.restaurantService.findRestaurantById(id);
-    return {
-      message: 'Restaurant retrieved successfully',
-      data: restaurant,
-    };
+    return restaurant;
+ 
   }
 
   @UseGuards(JwtAuthGuard)
@@ -54,10 +52,7 @@ export class RestaurantController {
       body,
     );
 
-    return {
-      message: 'Restaurant and owner created successfully',
-      result,
-    };
+    return result;
   }
 
   @UseGuards(JwtAuthGuard)
@@ -79,10 +74,7 @@ export class RestaurantController {
       body,
     );
 
-    return {
-      message: 'Restaurant updated successfully',
-      restaurant,
-    };
+    return restaurant;
   }
 
   @UseGuards(JwtAuthGuard)
@@ -102,9 +94,6 @@ export class RestaurantController {
       body.status,
     );
 
-    return {
-      message: 'Restaurant status updated successfully',
-      restaurant,
-    };
+    return restaurant;
   }
 }

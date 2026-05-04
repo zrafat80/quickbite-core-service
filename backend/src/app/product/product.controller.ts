@@ -86,10 +86,7 @@ export class ProductController {
       body,
     );
 
-    return {
-      message: 'Product created successfully',
-      product,
-    };
+    return product;
   }
 
   // 🌟 FIX: Added BranchAccessGuard!
@@ -118,7 +115,6 @@ export class ProductController {
     );
 
     return {
-      message: 'Product updated successfully',
       product: result.product,
       ...(result.branchDetails && { branchDetails: result.branchDetails }),
     };

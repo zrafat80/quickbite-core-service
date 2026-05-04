@@ -31,6 +31,7 @@ import { BranchModule } from './app/branch/branch.module';
 import { ProductModule } from './app/product/product.module';
 import { RbacModule } from './app/rbac/rbac.module';
 import { EmailModule } from './lib/email/email.module';
+import { EventsModule } from './lib/events/events.module';
 
 @Module({
   imports: [
@@ -69,8 +70,9 @@ import { EmailModule } from './lib/email/email.module';
     BranchModule,
     ProductModule,
     RbacModule,
-    
+
     EmailModule,
+    EventsModule,
     // Add your new domain modules (Users, Orders, etc.) here as you build them
   ],
   controllers: [],

@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { MailjetClient } from '../../pkg/mailjet';
+import { MailjetClient } from '../../pkg/mailjet/mailjet';
 import { EMAIL_PROVIDER_TOKEN } from './email.constants';
 import { IEmailProvider } from './email.interface';
 

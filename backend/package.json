@@ -25,7 +25,9 @@
     "test:e2e:cov": "jest --config ./test/jest-e2e.json --coverage",
     "test:e2e:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --config ./test/jest-e2e.json --runInBand",
     "test:all": "npm run test && npm run test:e2e",
-    "test:db:setup": "npm run db:clear && npm run seed:demo"
+    "test:db:setup": "npm run db:clear && npm run seed:demo",
+    "worker": "node dist/worker",
+    "worker:dev": "ts-node-dev -r tsconfig-paths/register src/worker.ts"
   },
   "dependencies": {
     "@keyv/redis": "^5.1.6",
@@ -44,6 +46,8 @@
     "@nestjs/typeorm": "^10.0.2",
     "@nestjs/websockets": "^10.4.19",
     "@types/cors": "^2.8.19",
+    "amqp-connection-manager": "^4.1.14",
+    "amqplib": "^0.10.4",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "cache-manager": "^7.2.8",
@@ -52,6 +56,7 @@
     "cloudinary": "^2.7.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "croner": "^9.0.0",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
     "handlebars": "^4.7.8",
@@ -78,6 +83,7 @@
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.0.0",
+    "@types/amqplib": "^0.10.5",
     "@types/bcrypt": "^5.0.2",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.0",

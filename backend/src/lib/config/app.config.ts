@@ -32,4 +32,20 @@ export default () => ({
     fromEmail: process.env.MAILJET_FROM_EMAIL as string,
     fromName: process.env.MAILJET_FROM_NAME as string,
   },
+
+  // Shared secret for service-to-service HTTP calls (matched against
+  // x-api-key header by RequireInternalApiKeyGuard).
+  internal: {
+    apiKey: process.env.INTERNAL_API_KEY as string,
+  },
+
+  // RabbitMQ — outbox worker publishes core.events here (consumed by
+  // order-service for cache invalidation).
+  rabbit: {
+    url: process.env.RABBITMQ_URL as string,
+    exchange: process.env.RABBITMQ_CORE_EVENTS_EXCHANGE || 'core.events',
+    drainCron: process.env.OUTBOX_DRAIN_CRON || '* * * * * *',
+    batchSize: parseInt(process.env.OUTBOX_BATCH_SIZE || '50', 10),
+  },
 });
+
