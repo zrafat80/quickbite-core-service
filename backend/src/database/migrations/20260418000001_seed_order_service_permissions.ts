@@ -20,7 +20,16 @@ export async function up(knex: Knex): Promise<void> {
     SELECT r.id, p.id, NOW()
     FROM roles r, permissions p
     WHERE r.name = 'owner'
-      AND p.resource IN ('orders','payments','deliveries','finance')
+      AND p.resource IN ('orders','payments','finance')
+    ON CONFLICT DO NOTHING;
+  `);
+
+  await knex.raw(`
+    INSERT INTO role_permissions (role_id, permission_id, created_at)
+    SELECT r.id, p.id, NOW()
+    FROM roles r, permissions p
+    WHERE r.name = 'system_admin'
+      AND p.resource IN ('deliveries')
     ON CONFLICT DO NOTHING;
   `);
 

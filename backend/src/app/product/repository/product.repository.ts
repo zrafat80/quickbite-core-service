@@ -147,14 +147,165 @@ export class ProductRepository {
     if (data.description !== undefined)
       updateData.description = data.description;
     if (data.imageUrl !== undefined) updateData.image_url = data.imageUrl;
-    
+
     if (data.categoryId !== undefined) updateData.category_id = data.categoryId;
 
     const [row] = await db('products')
       .where("id", id)
       .update(updateData)
       .returning('*');
-      
+
     return this.toEntity(row);
+  }
+
+  // Internal batch lookup for order-service checkout.
+  async findInternalByBranchAndIds(
+    branchId: number,
+    productIds: number[],
+    trx?: Knex.Transaction,
+  ): Promise<Array<{
+    productId: number;
+    name: string;
+    imageUrl: string | null;
+    price: number;
+    stock: number;
+    isAvailable: boolean;
+  }>> {
+    if (productIds.length === 0) return [];
+    const db = trx || this.knex;
+    const rows = await db('products as p')
+      .join('product_branch_details as pbd', 'p.id', 'pbd.product_id')
+      .where('pbd.branch_id', branchId)
+      .whereIn('p.id', productIds)
+      .whereNull('p.deleted_at')
+      .select(
+        'p.id as product_id',
+        'p.name',
+        'p.image_url',
+        'pbd.price',
+        'pbd.stock',
+        'pbd.is_available',
+      );
+    return rows.map((r: any) => ({
+      productId: Number(r.product_id),
+      name: r.name,
+      imageUrl: r.image_url ?? null,
+      price: Number(r.price),
+      stock: Number(r.stock),
+      isAvailable: Boolean(r.is_available),
+    }));
+  }
+
+  // Atomic reserve: select FOR UPDATE → check stock → decrement.
+  // Returns offending items on underflow so caller can 409.
+  async reserveStock(
+    branchId: number,
+    items: Array<{ productId: number; quantity: number }>,
+    trx: Knex.Transaction,
+  ): Promise<{
+    ok: boolean;
+    insufficient: Array<{ productId: number; requested: number; available: number }>;
+  }> {
+    const productIds = items.map((i) => i.productId);
+    const rows = await trx('product_branch_details')
+      .where('branch_id', branchId)
+      .whereIn('product_id', productIds)
+      .select('product_id', 'stock', 'is_available')
+      .forUpdate();
+
+    const byId = new Map<number, { stock: number; isAvailable: boolean }>();
+    for (const r of rows as any[]) {
+      byId.set(Number(r.product_id), {
+        stock: Number(r.stock),
+        isAvailable: Boolean(r.is_available),
+      });
+    }
+
+    const insufficient: Array<{ productId: number; requested: number; available: number }> = [];
+    for (const item of items) {
+      const cur = byId.get(item.productId);
+      if (!cur || !cur.isAvailable || cur.stock < item.quantity) {
+        insufficient.push({
+          productId: item.productId,
+          requested: item.quantity,
+          available: cur ? cur.stock : 0,
+        });
+      }
+    }
+    if (insufficient.length > 0) return { ok: false, insufficient };
+
+    // Single atomic bulk decrement: one round-trip instead of N updates.
+    const bindings: any[] = [];
+    const placeholders = items
+      .map((item) => {
+        bindings.push(item.productId, item.quantity);
+        return '(CAST(? AS BIGINT), CAST(? AS INT))';
+      })
+      .join(', ');
+    bindings.push(branchId);
+
+    await trx.raw(`
+      UPDATE product_branch_details AS p
+      SET stock = p.stock - v.quantity
+      FROM (VALUES ${placeholders}) AS v(product_id, quantity)
+      WHERE p.branch_id = ? AND p.product_id = v.product_id;
+    `, bindings);
+
+    return { ok: true, insufficient: [] };
+  }
+
+  // Atomic release: increment stock back. Mirror of reserveStock; used when an
+  // order that had reserved stock is cancelled/rejected before the kitchen
+  // commits to it.
+  async releaseStock(
+    branchId: number,
+    items: Array<{ productId: number; quantity: number }>,
+    trx: Knex.Transaction,
+  ): Promise<{
+    ok: boolean;
+    missing: number[];
+  }> {
+    // Early return to prevent SQL syntax errors on empty arrays
+    if (items.length === 0) {
+      return { ok: true, missing: [] };
+    }
+
+    const productIds = items.map((i) => i.productId);
+
+    // 1. Lock the rows and verify they exist
+    const rows = await trx('product_branch_details')
+      .where('branch_id', branchId)
+      .whereIn('product_id', productIds)
+      .select('product_id')
+      .forUpdate();
+
+    const present = new Set<number>(
+      (rows as any[]).map((r) => Number(r.product_id)),
+    );
+    const missing = productIds.filter((id) => !present.has(id));
+    if (missing.length > 0) return { ok: false, missing };
+
+    // 2. Prepare bindings for the Bulk Update
+    const bindings: any[] = [];
+    const placeholders = items
+      .map((item) => {
+        bindings.push(item.productId, item.quantity);
+        // Explicit casts prevent Postgres from guessing the wrong data type
+        return '(CAST(? AS BIGINT), CAST(? AS INT))';
+      })
+      .join(', ');
+
+    // Add branchId as the final parameter for the WHERE clause
+    bindings.push(branchId);
+
+    // 3. Execute the single atomic bulk addition
+    await trx.raw(`
+    UPDATE product_branch_details AS p
+    SET stock = p.stock + v.quantity
+    FROM (VALUES ${placeholders}) AS v(product_id, quantity)
+    WHERE p.branch_id = ? AND p.product_id = v.product_id;
+  `, bindings);
+
+    return { ok: true, missing: [] };
   }
 }

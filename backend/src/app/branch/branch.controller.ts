@@ -24,15 +24,79 @@ import {
 import { RequirePermissions } from 'src/lib/decorators/permissions.decorator';
 import { RestaurantMemberGuard } from 'src/lib/middleware/guards/restaurant-member.guard';
 import { PermissionsGuard } from 'src/lib/middleware/guards/permissions.guard';
+import { RequireInternalApiKeyGuard } from 'src/lib/middleware/guards/internal-api-key.guard';
 import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { TimeUtils } from 'src/pkg/utils/time.utils';
 import { UnifiedCacheInterceptor } from 'src/lib/cache/cache.interceptor';
 import { Idempotency } from 'src/lib/idempotency/idempotency.decorator';
 import { IdempotencyInterceptor } from 'src/lib/idempotency/idempotency.interceptor';
+import { ProductService } from '../product/product.service';
+import { ReserveStockDTO } from '../product/dto/reserve-stock.dto';
+import { ReleaseStockDTO } from '../product/dto/release-stock.dto';
 
 @Controller()
 export class BranchController {
-  constructor(private readonly branchService: BranchService) {}
+  constructor(
+    private readonly branchService: BranchService,
+    private readonly productService: ProductService,
+  ) {}
+
+  // ─── INTERNAL (service-to-service) ────────────────────────────────────────
+  @Get('internal/branches/:branchId')
+  @UseGuards(RequireInternalApiKeyGuard)
+  async getInternalBranch(
+    @Param('branchId', ParseIntPipe) branchId: number,
+  ) {
+    return this.branchService.findInternalById(branchId);
+  }
+
+  @Get('internal/branches')
+  @UseGuards(RequireInternalApiKeyGuard)
+  async getInternalBranchesBulk(
+    @Query('ids') ids: string,
+  ) {
+    const branchIds = (ids ?? '')
+      .split(',')
+      .map((s) => Number(s.trim()))
+      .filter((n) => !isNaN(n) && n > 0);
+    return this.branchService.findInternalMany(branchIds);
+  }
+
+  @Get('internal/branches/:branchId/products')
+  @UseGuards(RequireInternalApiKeyGuard)
+  async getInternalBranchProducts(
+    @Param('branchId', ParseIntPipe) branchId: number,
+    @Query('ids') ids: string,
+  ) {
+    const productIds = (ids ?? '')
+      .split(',')
+      .map((s) => Number(s.trim()))
+      .filter((n) => Number.isInteger(n) && n > 0);
+    return this.productService.findInternalBranchProducts(branchId, productIds);
+  }
+
+  @Post('internal/branches/:branchId/reserve-stock')
+  @UseGuards(RequireInternalApiKeyGuard)
+  @UseInterceptors(IdempotencyInterceptor)
+  @Idempotency({ strict: true })
+  async reserveStockInternal(
+    @Param('branchId', ParseIntPipe) branchId: number,
+    @Body() body: ReserveStockDTO,
+  ) {
+    return this.productService.reserveStockInternal(branchId, body.items);
+  }
+
+  @Post('internal/branches/:branchId/release-stock')
+  @UseGuards(RequireInternalApiKeyGuard)
+  @UseInterceptors(IdempotencyInterceptor)
+  @Idempotency({ strict: true })
+  async releaseStockInternal(
+    @Param('branchId', ParseIntPipe) branchId: number,
+    @Body() body: ReleaseStockDTO,
+  ) {
+    return this.productService.releaseStockInternal(branchId, body.items);
+  }
+  // ──────────────────────────────────────────────────────────────────────────
   @UseInterceptors(UnifiedCacheInterceptor)
   @CacheTTL(TimeUtils.hoursToMs(1))
   @Get('branches/nearby')

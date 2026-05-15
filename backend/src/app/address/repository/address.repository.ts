@@ -131,4 +131,13 @@ export class AddressRepository {
       .where({ user_id: userId, is_default: true })
       .update({ is_default: false });
   }
+
+  // For /api/internal/customer-addresses/:id — no userId scope, called by trusted services only.
+  async findInternalById(id: number): Promise<Address | null> {
+    const row = await this.knex('customer_addresses')
+      .select(ADDRESS_COLUMNS)
+      .where({ id })
+      .first();
+    return row ? this.toEntity(row) : null;
+  }
 }

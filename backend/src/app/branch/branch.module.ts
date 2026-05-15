@@ -1,18 +1,19 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { BranchService } from './branch.service';
 import { BranchRepository } from './repository/branch.repository';
 import { RestaurantModule } from 'src/app/restaurant/restaurant.module'; // 🌟 Import the module!
 import { BranchController } from './branch.controller';
+import { ProductModule } from 'src/app/product/product.module';
 
 @Module({
   controllers: [BranchController],
-  // 1. IMPORTS: Bring in RestaurantModule so NestJS knows where to find RestaurantService
-  imports: [RestaurantModule],
+  // RestaurantModule for ownership checks; ProductModule (forwardRef to avoid cycle)
+  // for the internal /branches/:id/products and /reserve-stock routes that live on
+  // this controller for URL ergonomics.
+  imports: [RestaurantModule, forwardRef(() => ProductModule)],
 
-  // 2. PROVIDERS: Wire up your Branch Service and Repository
   providers: [BranchService, BranchRepository],
 
-  // 3. EXPORTS: Export the BranchService so your Controllers (or Auth Module) can use it!
   exports: [BranchService],
 })
 export class BranchModule {}

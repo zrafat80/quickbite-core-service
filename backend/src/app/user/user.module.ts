@@ -4,12 +4,13 @@ import { UserService } from './user.service';
 import { UserRepository } from './repository/user.repository';
 import { UserController } from './user.controller';
 import { AuthModule } from 'src/app/auth/auth.module';
+import { UserInternalController } from './user.internal.controller';
 
 @Module({
   imports: [],
   // 1. Providers: Everything this specific module needs to build and run internally.
   // NestJS will build the UserRepository first, then inject it into the UserService.
-  controllers: [UserController],
+  controllers: [UserController, UserInternalController],
   providers: [UserService, UserRepository],
 
   // 2. Exports: The "Public API" of this module.

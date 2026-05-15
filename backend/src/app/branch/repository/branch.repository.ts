@@ -25,6 +25,7 @@ const BRANCH_COLUMNS = [
   'delivery_radius',
   'currency',
   'commission',
+  'delivery_fee',
   'location',
 ];
 
@@ -52,8 +53,106 @@ export class BranchRepository {
       deliveryRadius: row.delivery_radius,
       currency: row.currency,
       commission: row.commission,
+      deliveryFee: row.delivery_fee !== undefined ? Number(row.delivery_fee) : 0,
       location: row.location,
     });
+  }
+
+  // For /api/internal/branches/:id — joins restaurants for status + name.
+  async findInternalById(id: number): Promise<{
+    id: number;
+    restaurantId: number;
+    restaurantStatus: string;
+    restaurantName: string;
+    countryCode: string;
+    isActive: boolean;
+    acceptOrders: boolean;
+    deliveryFee: number;
+    commission: number;
+    currency: string;
+    lat: number;
+    lng: number;
+    label: string;
+    addressText: string;
+  } | null> {
+    const row = await this.knex('restaurant_branches as b')
+      .join('restaurants as r', 'b.restaurant_id', 'r.id')
+      .select(
+        'b.id',
+        'b.restaurant_id',
+        'b.country_code',
+        'b.is_active',
+        'b.accept_orders',
+        'b.delivery_fee',
+        'b.commission',
+        'b.currency',
+        'b.lat',
+        'b.lng',
+        'b.label',
+        'b.address_text',
+        'r.status as restaurant_status',
+        'r.name as restaurant_name',
+      )
+      .where('b.id', id)
+      .first();
+    if (!row) return null;
+    return {
+      id: Number(row.id),
+      restaurantId: Number(row.restaurant_id),
+      restaurantStatus: row.restaurant_status,
+      restaurantName: row.restaurant_name,
+      countryCode: row.country_code,
+      isActive: row.is_active,
+      acceptOrders: row.accept_orders,
+      deliveryFee: Number(row.delivery_fee),
+      commission: Number(row.commission),
+      currency: row.currency,
+      lat: Number(row.lat),
+      lng: Number(row.lng),
+      label: row.label,
+      addressText: row.address_text,
+    };
+  }
+
+  async findInternalMany(ids: number[]): Promise<any[]> {
+    if (ids.length === 0) return [];
+
+    const rows = await this.knex('restaurant_branches as b')
+      .join('restaurants as r', 'b.restaurant_id', 'r.id')
+      .select(
+        'b.id',
+        'b.restaurant_id',
+        'b.country_code',
+        'b.is_active',
+        'b.accept_orders',
+        'b.delivery_fee',
+        'b.commission',
+        'b.currency',
+        'b.lat',
+        'b.lng',
+        'b.label',
+        'b.address_text',
+        'r.status as restaurant_status',
+        'r.name as restaurant_name',
+      )
+      .whereIn('b.id', ids);
+
+    return rows.map((row: any) => ({
+      id: Number(row.id),
+      restaurantId: Number(row.restaurant_id),
+      restaurantStatus: row.restaurant_status,
+      restaurantName: row.restaurant_name,
+      countryCode: row.country_code,
+      isActive: row.is_active,
+      acceptOrders: row.accept_orders,
+      deliveryFee: Number(row.delivery_fee),
+      commission: Number(row.commission),
+      currency: row.currency,
+      lat: Number(row.lat),
+      lng: Number(row.lng),
+      label: row.label,
+      addressText: row.address_text,
+    }));
   }
 
   // 3. Safe NestJS Transaction Pattern

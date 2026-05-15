@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Injectable,
   Inject,
   ForbiddenException,
@@ -13,6 +14,8 @@ import { SystemRole } from '../user/enums'; // Adjust path
 import { PRODUCT_ERRORS } from './product.constants';
 import { UpdateProductDTO } from './dto/update-product.dto';
 import { ProductBranchDetailsRepository } from './repository/product-branch-details.repository';
+import { OutboxRepository } from '../../lib/events/outbox.repository';
+import { EVENT_TYPES } from '../../lib/events/event-types';
 
 // 📍 Import the Parsers and Builder
 import {
@@ -28,6 +31,7 @@ export class ProductService {
     private readonly categoryRepo: CategoryRepository,
     private readonly branchDetailsRepo: ProductBranchDetailsRepository,
     private readonly restaurantService: RestaurantService,
+    private readonly outboxRepo: OutboxRepository,
     @Inject('KNEX_CONNECTION') private readonly knex: Knex,
   ) {}
 
@@ -284,6 +288,23 @@ export class ProductService {
             PRODUCT_ERRORS.BRANCH_DETAILS_NOT_FOUND_FOR_THAT_BRANCH,
           );
         }
+
+        if (data.price !== undefined) {
+          await this.outboxRepo.insertOutboxEvent(trx, {
+            aggregateType: 'product_branch_details',
+            aggregateId: `${branchId}:${id}`,
+            eventType: EVENT_TYPES.PRODUCT_PRICE_CHANGED,
+            payload: { branchId, productId: id, price: data.price },
+          });
+        }
+        if (data.stock !== undefined) {
+          await this.outboxRepo.insertOutboxEvent(trx, {
+            aggregateType: 'product_branch_details',
+            aggregateId: `${branchId}:${id}`,
+            eventType: EVENT_TYPES.PRODUCT_STOCK_CHANGED,
+            payload: { branchId, productId: id, stock: data.stock },
+          });
+        }
       }
 
       await trx.commit();
@@ -295,6 +316,101 @@ export class ProductService {
     } catch (error) {
       await trx.rollback();
       throw error;
+    }
+  }
+
+  // For /api/internal/branches/:id/products?ids=...
+  async findInternalBranchProducts(branchId: number, productIds: number[]) {
+    return this.productRepo.findInternalByBranchAndIds(branchId, productIds);
+  }
+
+  // For /api/internal/branches/:id/reserve-stock
+  async reserveStockInternal(
+    branchId: number,
+    items: Array<{ productId: number; quantity: number }>,
+  ) {
+    if (items.length === 0) {
+      return { ok: true, reserved: [] as Array<{ productId: number; quantity: number }> };
+    }
+    const trx = await this.knex.transaction();
+    try {
+      const result = await this.productRepo.reserveStock(branchId, items, trx);
+      if (!result.ok) {
+        await trx.rollback();
+        throw new ConflictException({
+          message: PRODUCT_ERRORS.INSUFFICIENT_STOCK,
+          insufficient: result.insufficient,
+        });
+      }
+
+      await this.outboxRepo.insertOutboxEvents(
+        trx,
+        items.map((item) => ({
+          aggregateType: 'product_branch_details',
+          aggregateId: `${branchId}:${item.productId}`,
+          eventType: EVENT_TYPES.PRODUCT_STOCK_CHANGED,
+          payload: {
+            branchId,
+            productId: item.productId,
+            decremented: item.quantity,
+          },
+        })),
+      );
+
+      await trx.commit();
+      return { ok: true, reserved: items };
+    } catch (err) {
+      try {
+        await trx.rollback();
+      } catch {
+        /* trx may already be done */
+      }
+      throw err;
+    }
+  }
+
+  // For /api/internal/branches/:id/release-stock
+  async releaseStockInternal(
+    branchId: number,
+    items: Array<{ productId: number; quantity: number }>,
+  ) {
+    if (items.length === 0) {
+      return { ok: true, released: [] as Array<{ productId: number; quantity: number }> };
+    }
+    const trx = await this.knex.transaction();
+    try {
+      const result = await this.productRepo.releaseStock(branchId, items, trx);
+      if (!result.ok) {
+        await trx.rollback();
+        throw new NotFoundException({
+          message: PRODUCT_ERRORS.PRODUCT_NOT_FOUND,
+          missing: result.missing,
+        });
+      }
+
+      await this.outboxRepo.insertOutboxEvents(
+        trx,
+        items.map((item) => ({
+          aggregateType: 'product_branch_details',
+          aggregateId: `${branchId}:${item.productId}`,
+          eventType: EVENT_TYPES.PRODUCT_STOCK_CHANGED,
+          payload: {
+            branchId,
+            productId: item.productId,
+            incremented: item.quantity,
+          },
+        })),
+      );
+
+      await trx.commit();
+      return { ok: true, released: items };
+    } catch (err) {
+      try {
+        await trx.rollback();
+      } catch {
+        /* trx may already be done */
+      }
+      throw err;
     }
   }
 }

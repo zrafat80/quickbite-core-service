@@ -26,6 +26,27 @@ export class OutboxRepository {
   }
 
   /**
+   * Bulk variant — single multi-row INSERT for N events. Use this whenever a
+   * caller would otherwise loop over `insertOutboxEvent` (e.g. one event per
+   * order item). No-op on empty input.
+   */
+  async insertOutboxEvents(
+    trx: Knex.Transaction,
+    inputs: InsertOutboxInput[],
+  ): Promise<void> {
+    if (inputs.length === 0) return;
+    await trx('events_outbox').insert(
+      inputs.map((input) => ({
+        aggregate_type: input.aggregateType,
+        aggregate_id: String(input.aggregateId),
+        event_type: input.eventType,
+        event_id: randomUUID(),
+        payload: JSON.stringify(input.payload),
+      })),
+    );
+  }
+
+  /**
    * Dispatcher claim — selects a batch of undispatched rows and locks them so
    * another dispatcher process won't pick up the same rows. Caller is
    * responsible for committing/rolling back the trx.

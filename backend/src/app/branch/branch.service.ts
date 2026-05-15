@@ -174,4 +174,18 @@ export class BranchService {
       trx,
     );
   }
+
+  // For /api/internal/branches/:id — order-service consumes this at checkout.
+  async findInternalById(id: number) {
+    const data = await this.branchRepo.findInternalById(id);
+    if (!data) {
+      throw new NotFoundException(BRANCH_ERRORS.BRANCH_NOT_FOUND);
+    }
+    return data;
+  }
+
+  async findInternalMany(ids: number[]) {
+    if (ids.length === 0) return [];
+    return this.branchRepo.findInternalMany(ids);
+  }
 }

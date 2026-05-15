@@ -112,4 +112,25 @@ export class AddressService {
       message: 'Address deleted',
     };
   }
+
+  // For /api/internal/customer-addresses/:id
+  async findInternalById(id: number) {
+    const address = await this.addressRepo.findInternalById(id);
+    if (!address) {
+      throw new NotFoundException('Address not found');
+    }
+    return {
+      id: address.id,
+      userId: address.userId,
+      label: address.label,
+      country: address.country,
+      city: address.city,
+      street: address.street,
+      building: address.building,
+      apartmentNumber: address.apartmentNumber,
+      type: address.type,
+      lat: address.lat,
+      lng: address.lng,
+    };
+  }
 }
