@@ -19,6 +19,8 @@ export class MessageBrokerService implements OnModuleInit, OnApplicationShutdown
   private readonly logger = new Logger(MessageBrokerService.name);
   private readonly client: RabbitMQClient;
   private readonly exchange: string;
+  private readonly alternateExchange: string;
+  private readonly alternateQueue: string;
 
   constructor(private readonly configService: ConfigService) {
     const url = this.configService.get<string>('rabbit.url');
@@ -27,6 +29,12 @@ export class MessageBrokerService implements OnModuleInit, OnApplicationShutdown
     }
     this.client = new RabbitMQClient({ url });
     this.exchange = this.configService.get<string>('rabbit.exchange') ?? 'core.events';
+    this.alternateExchange =
+      this.configService.get<string>('rabbit.alternateExchange') ??
+      'core.events.unroutable';
+    this.alternateQueue =
+      this.configService.get<string>('rabbit.alternateQueue') ??
+      'core.events.unroutable.dlq';
   }
 
   async onModuleInit() {
@@ -34,7 +42,7 @@ export class MessageBrokerService implements OnModuleInit, OnApplicationShutdown
       await withTimeout(
         (async () => {
           await this.client.connect();
-          await this.client.declareExchange(this.exchange);
+          await this.declareTopology();
         })(),
         5_000,
         'RabbitMQ connect',
@@ -54,11 +62,18 @@ export class MessageBrokerService implements OnModuleInit, OnApplicationShutdown
 
   async ensureConnected(): Promise<void> {
     await this.client.connect();
-    await this.client.declareExchange(this.exchange);
+    await this.declareTopology();
   }
 
   async publish(routingKey: string, body: Buffer): Promise<void> {
     await this.client.publishConfirmed(this.exchange, routingKey, body);
+  }
+
+  private async declareTopology(): Promise<void> {
+    await this.client.declareExchange(this.exchange, {
+      alternateExchange: this.alternateExchange,
+      alternateQueue: this.alternateQueue,
+    });
   }
 }
 

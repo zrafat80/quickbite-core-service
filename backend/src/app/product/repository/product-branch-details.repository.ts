@@ -17,6 +17,17 @@ export class ProductBranchDetailsRepository {
     });
   }
 
+  async findBranchIdsByProduct(
+    productId: number,
+    trx?: Knex.Transaction,
+  ): Promise<number[]> {
+    const db = trx || this.knex;
+    const rows = await db('product_branch_details')
+      .select('branch_id')
+      .where({ product_id: productId });
+    return rows.map((r: any) => Number(r.branch_id));
+  }
+
   async updateBranchDetails(
     productId: number,
     branchId: number,

@@ -262,6 +262,29 @@ export class ProductService {
           },
           trx,
         );
+
+        // Fan out meta-changed to every branch that carries this product so
+        // consumers (e.g. order-service) can invalidate their per-branch meta
+        // projection. Only name/imageUrl belong to that projection today —
+        // description/category aren't cached downstream, so they don't trigger.
+        const metaFieldChanged =
+          data.name !== undefined || data.imageUrl !== undefined;
+        if (metaFieldChanged) {
+          const branchIds = await this.branchDetailsRepo.findBranchIdsByProduct(
+            id,
+            trx,
+          );
+          await Promise.all(
+            branchIds.map((branchId) =>
+              this.outboxRepo.insertOutboxEvent(trx, {
+                aggregateType: 'product_branch_details',
+                aggregateId: `${branchId}:${id}`,
+                eventType: EVENT_TYPES.PRODUCT_META_CHANGED,
+                payload: { branchId, productId: id },
+              }),
+            ),
+          );
+        }
       }
 
       // 6. Update Local Branch Details (If they passed branchId AND branch fields)
@@ -303,6 +326,14 @@ export class ProductService {
             aggregateId: `${branchId}:${id}`,
             eventType: EVENT_TYPES.PRODUCT_STOCK_CHANGED,
             payload: { branchId, productId: id, stock: data.stock },
+          });
+        }
+        if (data.isAvailable !== undefined) {
+          await this.outboxRepo.insertOutboxEvent(trx, {
+            aggregateType: 'product_branch_details',
+            aggregateId: `${branchId}:${id}`,
+            eventType: EVENT_TYPES.PRODUCT_META_CHANGED,
+            payload: { branchId, productId: id },
           });
         }
       }

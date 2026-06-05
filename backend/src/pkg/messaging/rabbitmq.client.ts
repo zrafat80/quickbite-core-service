@@ -16,6 +16,7 @@ export interface RabbitMQConfig {
 export class RabbitMQClient implements IMessageBroker {
   private connection: AmqpConnectionManager | null = null;
   private channel: ChannelWrapper | null = null;
+  private readonly declaredExchanges = new Set<string>();
 
   constructor(private readonly config: RabbitMQConfig) {}
 
@@ -43,11 +44,35 @@ export class RabbitMQClient implements IMessageBroker {
     this.connection = null;
   }
 
-  async declareExchange(exchange: string): Promise<void> {
+  async declareExchange(
+    exchange: string,
+    opts?: { alternateExchange?: string; alternateQueue?: string },
+  ): Promise<void> {
+    const declarationKey = JSON.stringify({
+      exchange,
+      alternateExchange: opts?.alternateExchange ?? null,
+      alternateQueue: opts?.alternateQueue ?? null,
+    });
+    if (this.declaredExchanges.has(declarationKey)) return;
+
     if (!this.channel) await this.connect();
-    await this.channel!.addSetup((ch: ConfirmChannel) =>
-      ch.assertExchange(exchange, 'topic', { durable: true }),
-    );
+    await this.channel!.addSetup(async (ch: ConfirmChannel) => {
+      if (opts?.alternateExchange && opts.alternateQueue) {
+        await ch.assertExchange(opts.alternateExchange, 'fanout', {
+          durable: true,
+        });
+        await ch.assertQueue(opts.alternateQueue, { durable: true });
+        await ch.bindQueue(opts.alternateQueue, opts.alternateExchange, '');
+      }
+
+      await ch.assertExchange(exchange, 'topic', {
+        durable: true,
+        arguments: opts?.alternateExchange
+          ? { 'alternate-exchange': opts.alternateExchange }
+          : undefined,
+      });
+    });
+    this.declaredExchanges.add(declarationKey);
   }
 
   async publishConfirmed(

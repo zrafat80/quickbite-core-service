@@ -44,6 +44,11 @@ export default () => ({
   rabbit: {
     url: process.env.RABBITMQ_URL as string,
     exchange: process.env.RABBITMQ_CORE_EVENTS_EXCHANGE || 'core.events',
+    alternateExchange:
+      process.env.RABBITMQ_CORE_EVENTS_AE || 'core.events.unroutable',
+    alternateQueue:
+      process.env.RABBITMQ_CORE_EVENTS_UNROUTABLE_QUEUE ||
+      'core.events.unroutable.dlq',
     drainCron: process.env.OUTBOX_DRAIN_CRON || '* * * * * *',
     batchSize: parseInt(process.env.OUTBOX_BATCH_SIZE || '50', 10),
   },
