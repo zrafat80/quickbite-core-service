@@ -13,6 +13,7 @@ import {
 import { MemberService } from './member.service'; // Adjust path if needed
 import {
   CreateMemberDTO,
+  RoleNameParamDTO,
   UpdateMemberDTO,
   UpdateMemberBranchesDTO,
 } from './dto/member.dto'; // Adjust path if needed
@@ -28,8 +29,10 @@ export class RbacController {
   constructor(private readonly memberService: MemberService) {}
 
   @Get('roles/:role/permissions')
-  async getRolePermissions(@Param('role') roleName: string) {
-    return await this.memberService.getRolePermissions(roleName);
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('core:member', 'read')
+  async getRolePermissions(@Param() params: RoleNameParamDTO) {
+    return await this.memberService.getRolePermissions(params.role);
   }
 
   @Post('restaurants/:restaurantId/members')

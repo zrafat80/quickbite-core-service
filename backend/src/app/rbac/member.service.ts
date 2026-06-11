@@ -261,6 +261,11 @@ export class MemberService {
   }
 
   async getRolePermissions(roleName: string) {
+    const roleId = await this.roleRepo.findRoleByName(roleName);
+    if (!roleId) {
+      throw new NotFoundException(RBAC_ERRORS.ROLE_NOT_FOUND);
+    }
+
     const permissions =
       await this.permissionRepo.getPermissionsByRoleName(roleName);
     return {
@@ -274,7 +279,14 @@ export class MemberService {
   // =======================================================================
 
   async activateInvite(userId: number, trx?: Knex.Transaction) {
-    return await this.restaurantMemberRepo.activateMemberByUserId(userId, trx);
+    const activated = await this.restaurantMemberRepo.activateMemberByUserId(
+      userId,
+      trx,
+    );
+    if (!activated) {
+      throw new NotFoundException('Pending invitation not found');
+    }
+    return activated;
   }
 
   async findRestaurantMemberWithRole(

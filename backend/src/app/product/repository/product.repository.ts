@@ -1,11 +1,11 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Knex } from 'knex';
 import { Product } from '../entity/product.entity';
-import { 
-  PaginationParams, 
-  FilterParams, 
-  applyCursorPagination, 
-  applyFilters 
+import {
+  PaginationParams,
+  FilterParams,
+  applyCursorPagination,
+  applyFilters,
 } from '../../../lib/pagination/cursor-pagination'; // Adjust path
 
 const PRODUCT_COLUMNS = [
@@ -54,7 +54,7 @@ export class ProductRepository {
       })
       .returning('*');
 
-    return this.toEntity(row); 
+    return this.toEntity(row);
   }
 
   // 📍 GET /products/:id
@@ -71,9 +71,8 @@ export class ProductRepository {
   async findProductsByRestaurant(
     restaurantId: number,
     pagination: PaginationParams,
-    filters: FilterParams[]
+    filters: FilterParams[],
   ): Promise<Product[]> {
-    
     let query = this.knex('products')
       .where({ restaurant_id: restaurantId })
       .whereNull('deleted_at'); // 🛡️ Hide soft-deleted items!
@@ -90,15 +89,15 @@ export class ProductRepository {
   async findProductsByBranch(
     branchId: number,
     pagination: PaginationParams,
-    filters: FilterParams[]
+    filters: FilterParams[],
   ): Promise<any[]> {
-    
     // 🌟 Standard Builder so we can pass it to the engine
     let query = this.knex('products as p')
       .join('product_branch_details as pbd', 'p.id', 'pbd.product_id')
       .leftJoin('product_categories as pc', 'p.category_id', 'pc.id')
       .where('pbd.branch_id', branchId)
-      .whereNull('p.deleted_at') 
+      .where('pbd.is_available', true)
+      .whereNull('p.deleted_at')
       .select(
         'p.id',
         'p.name',
@@ -151,7 +150,7 @@ export class ProductRepository {
     if (data.categoryId !== undefined) updateData.category_id = data.categoryId;
 
     const [row] = await db('products')
-      .where("id", id)
+      .where('id', id)
       .update(updateData)
       .returning('*');
 
@@ -163,14 +162,16 @@ export class ProductRepository {
     branchId: number,
     productIds: number[],
     trx?: Knex.Transaction,
-  ): Promise<Array<{
-    productId: number;
-    name: string;
-    imageUrl: string | null;
-    price: number;
-    stock: number;
-    isAvailable: boolean;
-  }>> {
+  ): Promise<
+    Array<{
+      productId: number;
+      name: string;
+      imageUrl: string | null;
+      price: number;
+      stock: number;
+      isAvailable: boolean;
+    }>
+  > {
     if (productIds.length === 0) return [];
     const db = trx || this.knex;
     const rows = await db('products as p')
@@ -204,7 +205,11 @@ export class ProductRepository {
     trx: Knex.Transaction,
   ): Promise<{
     ok: boolean;
-    insufficient: Array<{ productId: number; requested: number; available: number }>;
+    insufficient: Array<{
+      productId: number;
+      requested: number;
+      available: number;
+    }>;
   }> {
     const productIds = items.map((i) => i.productId);
     const rows = await trx('product_branch_details')
@@ -221,7 +226,11 @@ export class ProductRepository {
       });
     }
 
-    const insufficient: Array<{ productId: number; requested: number; available: number }> = [];
+    const insufficient: Array<{
+      productId: number;
+      requested: number;
+      available: number;
+    }> = [];
     for (const item of items) {
       const cur = byId.get(item.productId);
       if (!cur || !cur.isAvailable || cur.stock < item.quantity) {
@@ -244,12 +253,15 @@ export class ProductRepository {
       .join(', ');
     bindings.push(branchId);
 
-    await trx.raw(`
+    await trx.raw(
+      `
       UPDATE product_branch_details AS p
       SET stock = p.stock - v.quantity
       FROM (VALUES ${placeholders}) AS v(product_id, quantity)
       WHERE p.branch_id = ? AND p.product_id = v.product_id;
-    `, bindings);
+    `,
+      bindings,
+    );
 
     return { ok: true, insufficient: [] };
   }
@@ -299,12 +311,15 @@ export class ProductRepository {
     bindings.push(branchId);
 
     // 3. Execute the single atomic bulk addition
-    await trx.raw(`
+    await trx.raw(
+      `
     UPDATE product_branch_details AS p
     SET stock = p.stock + v.quantity
     FROM (VALUES ${placeholders}) AS v(product_id, quantity)
     WHERE p.branch_id = ? AND p.product_id = v.product_id;
-  `, bindings);
+  `,
+      bindings,
+    );
 
     return { ok: true, missing: [] };
   }

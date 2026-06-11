@@ -112,6 +112,9 @@ export class ProductController {
       req.user.role,
       body,
       branchId,
+      req.user.restaurantId,
+      req.user.restaurantRole,
+      req.user.branchIds,
     );
 
     return {

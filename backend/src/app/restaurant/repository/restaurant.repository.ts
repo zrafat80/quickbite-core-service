@@ -1,11 +1,11 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Knex } from 'knex';
 import { RestaurantEntity } from '../entity/restaurant.entity';
-import { 
-  PaginationParams, 
-  FilterParams, 
-  applyCursorPagination, 
-  applyFilters 
+import {
+  PaginationParams,
+  FilterParams,
+  applyCursorPagination,
+  applyFilters,
 } from '../../../lib/pagination/cursor-pagination'; // Adjust path
 
 // Safe explicit column selection
@@ -43,7 +43,7 @@ export class RestaurantRepository {
   // 📍 UPGRADED WITH PAGINATION
   async findAllRestaurants(
     pagination: PaginationParams,
-    filters: FilterParams[]
+    filters: FilterParams[],
   ): Promise<RestaurantEntity[]> {
     let query = this.knex('restaurants').select(RESTAURANT_COLUMNS);
 
@@ -108,6 +108,7 @@ export class RestaurantRepository {
     const [updatedRow] = await this.knex('restaurants')
       .where('id', id)
       .update({
+        status,
         status_updated_at: new Date(),
         updated_at: new Date(),
       })

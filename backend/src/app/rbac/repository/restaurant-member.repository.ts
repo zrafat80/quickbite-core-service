@@ -52,13 +52,15 @@ export class RestaurantMemberRepository {
   async activateMemberByUserId(
     userId: number,
     trx?: Knex.Transaction,
-  ): Promise<void> {
+  ): Promise<number> {
     const db = trx || this.knex;
 
-    await db('restaurant_members').where({ user_id: userId }).update({
-      status: MemberStatus.ACTIVE,
-      updated_at: this.knex.fn.now(), // 🌟 Better to let PostgreSQL handle the exact timestamp
-    });
+    return db('restaurant_members')
+      .where({ user_id: userId, status: MemberStatus.INACTIVE })
+      .update({
+        status: MemberStatus.ACTIVE,
+        updated_at: this.knex.fn.now(),
+      });
   }
 
   async findRestaurantMemberWithRole(

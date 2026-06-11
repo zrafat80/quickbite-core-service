@@ -32,6 +32,8 @@ import { ProductModule } from './app/product/product.module';
 import { RbacModule } from './app/rbac/rbac.module';
 import { EmailModule } from './lib/email/email.module';
 import { EventsModule } from './lib/events/events.module';
+import { LoggingModule } from './lib/logging/logging.module';
+import { LoggingInterceptor } from './lib/logging/logging.interceptor';
 
 @Module({
   imports: [
@@ -73,6 +75,7 @@ import { EventsModule } from './lib/events/events.module';
 
     EmailModule,
     EventsModule,
+    LoggingModule,
     // Add your new domain modules (Users, Orders, etc.) here as you build them
   ],
   controllers: [],
@@ -85,6 +88,10 @@ import { EventsModule } from './lib/events/events.module';
     {
       provide: APP_INTERCEPTOR,
       useClass: SuccessInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
     },
   ],
 })

@@ -196,6 +196,9 @@ export class ProductService {
     userRole: SystemRole,
     data: UpdateProductDTO,
     branchId?: number,
+    userRestaurantId?: number,
+    restaurantRole?: string,
+    branchIds: number[] = [],
   ) {
     // 1. Verify Product Exists
     const product = await this.productRepo.findProductById(id);
@@ -207,9 +210,17 @@ export class ProductService {
     const restaurant = await this.restaurantService.findRestaurantById(
       product.restaurantId,
     );
+    const isOwner = Number(restaurant.ownerId) === Number(userId);
+    const isAssignedManager =
+      restaurantRole === 'branch_manager' &&
+      Number(userRestaurantId) === Number(product.restaurantId) &&
+      branchId !== undefined &&
+      branchIds.includes(branchId);
+
     if (
       userRole !== SystemRole.SYSTEM_ADMIN &&
-      Number(restaurant.ownerId) !== Number(userId)
+      !isOwner &&
+      !isAssignedManager
     ) {
       throw new ForbiddenException(
         'You do not have permission to update this product',

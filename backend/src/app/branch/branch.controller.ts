@@ -11,6 +11,7 @@ import {
   ParseFloatPipe,
   Patch,
   UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
 import { BranchService } from './branch.service';
 import { CreateBranchDTO } from './dto/branch.dto';
@@ -44,21 +45,14 @@ export class BranchController {
   // ─── INTERNAL (service-to-service) ────────────────────────────────────────
   @Get('internal/branches/:branchId')
   @UseGuards(RequireInternalApiKeyGuard)
-  async getInternalBranch(
-    @Param('branchId', ParseIntPipe) branchId: number,
-  ) {
+  async getInternalBranch(@Param('branchId', ParseIntPipe) branchId: number) {
     return this.branchService.findInternalById(branchId);
   }
 
   @Get('internal/branches')
   @UseGuards(RequireInternalApiKeyGuard)
-  async getInternalBranchesBulk(
-    @Query('ids') ids: string,
-  ) {
-    const branchIds = (ids ?? '')
-      .split(',')
-      .map((s) => Number(s.trim()))
-      .filter((n) => !isNaN(n) && n > 0);
+  async getInternalBranchesBulk(@Query('ids') ids: string) {
+    const branchIds = this.parsePositiveIntegerList(ids, 'ids');
     return this.branchService.findInternalMany(branchIds);
   }
 
@@ -68,10 +62,7 @@ export class BranchController {
     @Param('branchId', ParseIntPipe) branchId: number,
     @Query('ids') ids: string,
   ) {
-    const productIds = (ids ?? '')
-      .split(',')
-      .map((s) => Number(s.trim()))
-      .filter((n) => Number.isInteger(n) && n > 0);
+    const productIds = this.parsePositiveIntegerList(ids, 'ids');
     return this.productService.findInternalBranchProducts(branchId, productIds);
   }
 
@@ -161,6 +152,9 @@ export class BranchController {
       req.user.userId,
       req.user.role,
       data,
+      req.user.restaurantId,
+      req.user.restaurantRole,
+      req.user.branchIds,
     );
     return branch;
   }
@@ -183,5 +177,19 @@ export class BranchController {
       data,
     );
     return branch;
+  }
+
+  private parsePositiveIntegerList(
+    value: string | undefined,
+    field: string,
+  ): number[] {
+    if (!value) {
+      throw new BadRequestException(`${field} is required`);
+    }
+    const parsed = value.split(',').map((item) => Number(item.trim()));
+    if (parsed.some((item) => !Number.isInteger(item) || item <= 0)) {
+      throw new BadRequestException(`${field} must contain positive integers`);
+    }
+    return parsed;
   }
 }

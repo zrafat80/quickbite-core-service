@@ -1,14 +1,21 @@
 import {
+  ArrayUnique,
   IsEmail,
   IsNotEmpty,
   IsString,
-  IsNumber,
   IsArray,
   IsOptional,
-  IsISIN,
   IsInt,
   IsIn,
+  Matches,
+  Min,
 } from 'class-validator';
+
+export class RoleNameParamDTO {
+  @IsString()
+  @Matches(/^[a-z][a-z0-9_]*$/)
+  role!: string;
+}
 
 export class CreateMemberDTO {
   @IsEmail()
@@ -29,11 +36,16 @@ export class CreateMemberDTO {
 
   @IsArray()
   @IsOptional()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
   branchIds!: number[];
 }
+
 export class UpdateMemberDTO {
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   role?: string;
 
   @IsOptional()
@@ -46,5 +58,8 @@ export class UpdateMemberDTO {
 
 export class UpdateMemberBranchesDTO {
   @IsArray({ message: 'branchIds must be an array' })
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
   branchIds!: number[];
 }
