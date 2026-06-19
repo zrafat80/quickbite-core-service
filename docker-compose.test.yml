@@ -7,7 +7,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=zeyiad123123
-      - POSTGRES_DB=mySecond
+      - POSTGRES_DB=quickbite_test
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -34,9 +34,9 @@ services:
         - ./backend/.env.test
       environment:
         - DB_HOST=postgres-test
-        - DB_DATABASE=mySecond
+        - DB_DATABASE=quickbite_test
         - TEST_DB_HOST=postgres-test
-        - TEST_DB_NAME=mySecond
+        - TEST_DB_NAME=quickbite_test
         - REDIS_HOST=redis-test
         - RABBITMQ_URL=amqp://guest:guest@rabbitmq-test:5672
       depends_on:
