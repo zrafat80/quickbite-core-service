@@ -6,7 +6,7 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # 1. Install pnpm globally inside the builder container
-RUN npm install -g pnpm
+RUN npm install -g pnpm@8.15.9
 
 # 2. Copy package.json and your true pnpm lock-file blueprint
 COPY package.json pnpm-lock.yaml ./
@@ -31,7 +31,7 @@ FROM node:22-alpine
 WORKDIR /app
 
 # 1. Install pnpm globally inside the production container too
-RUN npm install -g pnpm
+RUN npm install -g pnpm@8.15.9
 
 # 2. Copy the lock-files to install production dependencies
 COPY package.json pnpm-lock.yaml ./
