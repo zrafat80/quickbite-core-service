@@ -30,7 +30,7 @@ services:
   # ==========================================
   # 2. THE TEST RUNNER
   # ==========================================
-core-service-test:
+  core-service-test:
     build:
       context: ./backend      # Points to where your NestJS Dockerfile is
       target: builder         # Stops the build at Stage 1 so Jest isn't deleted!
