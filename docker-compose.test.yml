@@ -26,35 +26,24 @@ services:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s
       retries: 5
-
-  # ==========================================
-  # 2. THE TEST RUNNER
-  # ==========================================
   core-service-test:
-    build:
-      context: ./backend      # Points to where your NestJS Dockerfile is
-      target: builder         # Stops the build at Stage 1 so Jest isn't deleted!
-
-    # Loads all your baseline test secrets (JWTs, Mailjet, etc.)
-    env_file:
-      - ./backend/.env.test
-
-    # Surgically overrides the localhost variables to use the Docker network
-    environment:
-      - DB_HOST=postgres-test
-      - DB_DATABASE=mySecond
-      - TEST_DB_HOST=postgres-test
-      - TEST_DB_NAME=mySecond
-      - REDIS_HOST=redis-test
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq-test:5672
-
-    depends_on:
-      postgres-test:
-        condition: service_healthy
-      redis-test:
-        condition: service_healthy
-      rabbitmq-test:
-        condition: service_healthy
-
-    # Executes your package.json script to run Unit tests first, then E2E tests
-    command: ["pnpm", "run", "test:all"]
+      build:
+        context: ./backend      # <--- Keep this pointed at the backend folder!
+        target: builder
+      env_file:
+        - ./backend/.env.test
+      environment:
+        - DB_HOST=postgres-test
+        - DB_DATABASE=mySecond
+        - TEST_DB_HOST=postgres-test
+        - TEST_DB_NAME=mySecond
+        - REDIS_HOST=redis-test
+        - RABBITMQ_URL=amqp://guest:guest@rabbitmq-test:5672
+      depends_on:
+        postgres-test:
+          condition: service_healthy
+        redis-test:
+          condition: service_healthy
+        rabbitmq-test:
+          condition: service_healthy
+      command: [ "pnpm", "run", "test:all" ]
