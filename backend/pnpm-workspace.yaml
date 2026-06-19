@@ -1,5 +1,5 @@
 allowBuilds:
-  '@nestjs/core': set this to true or false
-  '@scarf/scarf': set this to true or false
-  bcrypt: set this to true or false
-  puppeteer: set this to true or false
+  '@nestjs/core@10.4.22': false
+  '@scarf/scarf@1.4.0': false
+  'bcrypt@6.0.0': true
+  'puppeteer@24.43.1': false

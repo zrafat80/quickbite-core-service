@@ -12,7 +12,7 @@ const MIGRATIONS_PATH = path.resolve(
 );
 
 export function loadTestEnvironment(): void {
-  const result = config({ path: TEST_ENV_PATH, override: true });
+  const result = config({ path: TEST_ENV_PATH, override: false });
 
   if (result.error) {
     throw new Error(`Unable to load test environment at ${TEST_ENV_PATH}`);
