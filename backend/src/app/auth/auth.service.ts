@@ -24,7 +24,7 @@ import { TimeUtils } from 'src/pkg/utils/time.utils';
 import { MemberService } from 'src/app/rbac/member.service';
 import { passwordResetEmail } from './templates/password-reset';
 import { EMAIL_PROVIDER_TOKEN } from 'src/lib/email/email.constants';
-import { IEmailProvider } from 'src/lib/email/email.interface';
+import type { IEmailProvider } from 'src/lib/email/email.interface';
 @Injectable()
 export class AuthService {
   // 1. Inject the dependencies via the constructor

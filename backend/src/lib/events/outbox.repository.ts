@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Knex } from 'knex';
 import { randomUUID } from 'crypto';
-import { InsertOutboxInput, OutboxRow } from './events.types';
+import type { InsertOutboxInput, OutboxRow } from './events.types';
 
 @Injectable()
 export class OutboxRepository {

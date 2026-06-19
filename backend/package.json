@@ -69,7 +69,7 @@
     "nest": "^0.1.6",
     "nest-cli": "^0.0.5",
     "node-mailjet": "^6.0.11",
-    "nodemailer": "^7.0.3",
+    "nodemailer": "^9.0.0",
     "pg": "^8.20.0",
     "puppeteer": "^24.7.2",
     "reflect-metadata": "^0.2.0",
@@ -129,5 +129,13 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@scarf/scarf",
+      "bcrypt",
+      "puppeteer"
+    ]
   }
 }

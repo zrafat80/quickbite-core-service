@@ -42,7 +42,7 @@ export default () => ({
   // RabbitMQ — outbox worker publishes core.events here (consumed by
   // order-service for cache invalidation).
   rabbit: {
-    url: process.env.RABBITMQ_URL as string,
+    url: process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672',
     exchange: process.env.RABBITMQ_CORE_EVENTS_EXCHANGE || 'core.events',
     alternateExchange:
       process.env.RABBITMQ_CORE_EVENTS_AE || 'core.events.unroutable',
