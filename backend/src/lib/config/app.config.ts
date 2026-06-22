@@ -6,7 +6,7 @@ export default () => ({
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432', 10),
     username: process.env.DB_USERNAME || 'postgres',
-    password: process.env.DB_PASSWORD || 'zeyiad123123',
+    password: process.env.DB_PASSWORD || '',
     name: process.env.DB_DATABASE || 'myfirst',
     poolMin: parseInt(process.env.DB_POOL_MIN || '2', 10),
     poolMax: parseInt(process.env.DB_POOL_MAX || '10', 10),
@@ -16,7 +16,7 @@ export default () => ({
     host: process.env.TEST_DB_HOST || 'localhost',
     port: parseInt(process.env.TEST_DB_PORT || '5432', 10),
     username: process.env.TEST_DB_USERNAME || 'postgres',
-    password: process.env.TEST_DB_PASSWORD || 'zeyiad123123',
+    password: process.env.TEST_DB_PASSWORD || '',
     name: process.env.TEST_DB_NAME || 'mySecond',
   },
   jwt: {
@@ -53,4 +53,3 @@ export default () => ({
     batchSize: parseInt(process.env.OUTBOX_BATCH_SIZE || '50', 10),
   },
 });
-

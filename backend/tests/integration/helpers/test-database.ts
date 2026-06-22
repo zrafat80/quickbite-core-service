@@ -1,9 +1,11 @@
 import { config } from 'dotenv';
+import { existsSync } from 'fs';
 import { Knex } from 'knex';
 import path from 'path';
 
 const MIGRATION_TABLES = ['knex_migrations', 'knex_migrations_lock'];
 const TEST_ENV_PATH = path.resolve(process.cwd(), '.env.test');
+const TEST_ENV_EXAMPLE_PATH = path.resolve(process.cwd(), '.env.test.example');
 const MIGRATIONS_PATH = path.resolve(
   process.cwd(),
   'src',
@@ -12,10 +14,13 @@ const MIGRATIONS_PATH = path.resolve(
 );
 
 export function loadTestEnvironment(): void {
-  const result = config({ path: TEST_ENV_PATH, override: false });
+  const envPath = existsSync(TEST_ENV_PATH)
+    ? TEST_ENV_PATH
+    : TEST_ENV_EXAMPLE_PATH;
+  const result = config({ path: envPath, override: false });
 
   if (result.error) {
-    throw new Error(`Unable to load test environment at ${TEST_ENV_PATH}`);
+    throw new Error(`Unable to load test environment at ${envPath}`);
   }
 }
 

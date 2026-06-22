@@ -1,9 +1,17 @@
 # Ignore heavy dependencies (Docker installs its own!)
 node_modules/
 dist/
+coverage/
+.tmp/
 
 # Ignore local environment secrets
-.env
+.env*
+!.env.sample
+!.env.test.example
+
+# Ignore locally emitted compiler artifacts
+src/**/*.js
+*.tsbuildinfo
 
 # Ignore Git history and logs
 .git/
