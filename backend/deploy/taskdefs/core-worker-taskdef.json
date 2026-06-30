@@ -1,0 +1,81 @@
+{
+  "family": "core-worker",
+  "executionRoleArn": "arn:aws:iam::455919270013:role/ecsTaskExecutionRole",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "containerDefinitions": [
+    {
+      "name": "core-worker",
+      "image": "455919270013.dkr.ecr.eu-north-1.amazonaws.com/core-service:latest",
+      "essential": true,
+      "command": ["node", "dist/worker.js"],
+      "environment": [
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        },
+        {
+          "name": "DB_POOL_MIN",
+          "value": "2"
+        },
+        {
+          "name": "DB_POOL_MAX",
+          "value": "10"
+        },
+        {
+          "name": "RABBITMQ_CORE_EVENTS_EXCHANGE",
+          "value": "core.events"
+        },
+        {
+          "name": "OUTBOX_DRAIN_CRON",
+          "value": "* * * * * *"
+        },
+        {
+          "name": "OUTBOX_BATCH_SIZE",
+          "value": "50"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "DB_HOST",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/db-7dk4nx:DB_HOST::"
+        },
+        {
+          "name": "DB_PORT",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/db-7dk4nx:DB_PORT::"
+        },
+        {
+          "name": "DB_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/db-7dk4nx:DB_USERNAME::"
+        },
+        {
+          "name": "DB_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/db-7dk4nx:DB_PASSWORD::"
+        },
+        {
+          "name": "DB_DATABASE",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/db-7dk4nx:DB_DATABASE::"
+        },
+        {
+          "name": "RABBITMQ_URL",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:mq-URwQfp:RABBITMQ_URL::"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/core-worker",
+          "awslogs-create-group": "true",
+          "awslogs-region": "eu-north-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

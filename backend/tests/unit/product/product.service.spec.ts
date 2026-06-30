@@ -11,6 +11,7 @@ import { ProductService } from 'src/app/product/product.service';
 import { RestaurantService } from 'src/app/restaurant/restaurant.service';
 import { SystemRole } from 'src/app/user/enums';
 import { OutboxRepository } from 'src/lib/events/outbox.repository';
+import { MediaService } from 'src/app/media/media.service';
 import { createTransactionMock } from '../helpers/test-doubles';
 
 describe('ProductService', () => {
@@ -38,6 +39,9 @@ describe('ProductService', () => {
     insertOutboxEvent: jest.fn(),
     insertOutboxEvents: jest.fn(),
   };
+  const media = {
+    assertCompletedMediaUrl: jest.fn().mockResolvedValue(undefined),
+  };
   const transaction = createTransactionMock();
   const knex = {
     transaction: jest.fn().mockResolvedValue(transaction),
@@ -48,6 +52,7 @@ describe('ProductService', () => {
     branchDetailsRepository as unknown as ProductBranchDetailsRepository,
     restaurants as unknown as RestaurantService,
     outbox as unknown as OutboxRepository,
+    media as unknown as MediaService,
     knex as unknown as Knex,
   );
   const restaurant = { id: 5, ownerId: 7 };
@@ -76,6 +81,7 @@ describe('ProductService', () => {
       service.create(5, 7, SystemRole.RESTAURANT_USER, {
         name: 'Burger',
         categoryName: 'Meals',
+        imageUrl: 'https://cdn.test/burger.png',
       } as never),
     ).resolves.toBe(product);
     expect(productRepository.createProduct).toHaveBeenCalledWith(
@@ -83,6 +89,11 @@ describe('ProductService', () => {
       transaction,
     );
     expect(transaction.commit).toHaveBeenCalled();
+    expect(media.assertCompletedMediaUrl).toHaveBeenCalledWith(
+      5,
+      'https://cdn.test/burger.png',
+      'product_image',
+    );
   });
 
   it('creates a missing category and rolls back failed product creation', async () => {

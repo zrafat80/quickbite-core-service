@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { GUARD_ERRORS } from './guard.constants';
 
 @Injectable()
@@ -16,7 +16,9 @@ export class RequireInternalApiKeyGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const expected = this.configService.get<string>('internal.apiKey');
     if (!expected) {
-      throw new ServiceUnavailableException(GUARD_ERRORS.INTERNAL_API_KEY_NOT_CONFIGURED);
+      throw new ServiceUnavailableException(
+        GUARD_ERRORS.INTERNAL_API_KEY_NOT_CONFIGURED,
+      );
     }
 
     const req = context.switchToHttp().getRequest<Request>();

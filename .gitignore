@@ -11,3 +11,30 @@
 /.tools/
 .idea/
 .vscode/
+
+# Local CI and one-off debug helpers
+/.actrc
+/LOCAL_CI.md
+/scripts/
+/backend/.gitignore
+/backend/apply-core-taskdef.cmd
+/backend/fix-user.js
+/backend/get-users.js
+/backend/run-media-migration.js
+/backend/seed-advanced-scenarios.js
+/backend/seed-test.js
+/backend/test-advanced-scenarios.ps1
+/backend/test-endpoints.ps1
+/backend/test-logo.png
+/backend/test-product.jpg
+/backend/test-rest-id.txt
+
+# Generated AWS CLI scratch files
+/backend/deploy/apply-core-env-secrets.cmd
+/backend/deploy/apply-core-env-secrets.ps1
+/backend/deploy/apply-core-env-secrets-to-taskdef.ps1
+/backend/deploy/core-env-secrets.json
+/backend/deploy/current-taskdef.json
+/backend/deploy/register-
+/backend/deploy/register-core-taskdef.json
+/backend/deploy/rule-*.json

@@ -1,0 +1,137 @@
+{
+  "family": "order-migrate",
+  "executionRoleArn": "arn:aws:iam::455919270013:role/ecsTaskExecutionRole",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "455919270013.dkr.ecr.eu-north-1.amazonaws.com/order-service:latest",
+      "essential": true,
+      "command": [
+        "node",
+        "-e",
+        "const knex=require('knex');const regions=(process.env.REGIONS||'eg,ksa').split(',').map(s=>s.trim()).filter(Boolean);async function run(prefix,region){const host=process.env[`${prefix}_${region}_HOST`];const port=process.env[`${prefix}_${region}_PORT`];const user=process.env[`${prefix}_${region}_USERNAME`];const password=process.env[`${prefix}_${region}_PASSWORD`];const database=process.env[`${prefix}_${region}_NAME`];if(!host||!port||!user||!database){console.log(`skip ${prefix}_${region}: missing env`);return;}const db=knex({client:'pg',connection:{host,port:Number(port),user,password:password||'',database,ssl:{rejectUnauthorized:false}},pool:{min:0,max:Number(process.env.DB_POOL_MAX||10)},migrations:{directory:process.env.DB_MIGRATION_DIRECTORY||'dist/database/migrations',extension:process.env.DB_MIGRATION_EXTENSION||'js'}});try{const r=await db.migrate.latest();console.log(`migrated ${prefix}_${region}`,JSON.stringify(r));}finally{await db.destroy();}};(async()=>{for(const region of regions){await run('DB',region);await run('ARCHIVE_DB',region);}})().catch(e=>{console.error(e);process.exit(1);});"
+      ],
+      "environment": [
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        },
+        {
+          "name": "REGIONS",
+          "value": "eg,ksa"
+        },
+        {
+          "name": "DB_POOL_MAX",
+          "value": "10"
+        },
+        {
+          "name": "DB_MIGRATION_DIRECTORY",
+          "value": "dist/database/migrations"
+        },
+        {
+          "name": "DB_MIGRATION_EXTENSION",
+          "value": "js"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "DB_eg_HOST",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:DB_eg_HOST::"
+        },
+        {
+          "name": "DB_eg_PORT",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:DB_eg_PORT::"
+        },
+        {
+          "name": "DB_eg_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:DB_eg_USERNAME::"
+        },
+        {
+          "name": "DB_eg_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:DB_eg_PASSWORD::"
+        },
+        {
+          "name": "DB_eg_NAME",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:DB_eg_NAME::"
+        },
+        {
+          "name": "DB_ksa_HOST",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:DB_ksa_HOST::"
+        },
+        {
+          "name": "DB_ksa_PORT",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:DB_ksa_PORT::"
+        },
+        {
+          "name": "DB_ksa_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:DB_ksa_USERNAME::"
+        },
+        {
+          "name": "DB_ksa_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:DB_ksa_PASSWORD::"
+        },
+        {
+          "name": "DB_ksa_NAME",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:DB_ksa_NAME::"
+        },
+        {
+          "name": "ARCHIVE_DB_eg_HOST",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:ARCHIVE_DB_eg_HOST::"
+        },
+        {
+          "name": "ARCHIVE_DB_eg_PORT",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:ARCHIVE_DB_eg_PORT::"
+        },
+        {
+          "name": "ARCHIVE_DB_eg_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:ARCHIVE_DB_eg_USERNAME::"
+        },
+        {
+          "name": "ARCHIVE_DB_eg_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:ARCHIVE_DB_eg_PASSWORD::"
+        },
+        {
+          "name": "ARCHIVE_DB_eg_NAME",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:ARCHIVE_DB_eg_NAME::"
+        },
+        {
+          "name": "ARCHIVE_DB_ksa_HOST",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:ARCHIVE_DB_ksa_HOST::"
+        },
+        {
+          "name": "ARCHIVE_DB_ksa_PORT",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:ARCHIVE_DB_ksa_PORT::"
+        },
+        {
+          "name": "ARCHIVE_DB_ksa_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:ARCHIVE_DB_ksa_USERNAME::"
+        },
+        {
+          "name": "ARCHIVE_DB_ksa_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:ARCHIVE_DB_ksa_PASSWORD::"
+        },
+        {
+          "name": "ARCHIVE_DB_ksa_NAME",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/db-WrBsmZ:ARCHIVE_DB_ksa_NAME::"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/order-migrate",
+          "awslogs-create-group": "true",
+          "awslogs-region": "eu-north-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

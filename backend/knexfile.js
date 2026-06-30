@@ -11,6 +11,7 @@ exports.default = {
         user: process.env.DB_USERNAME || 'postgres',
         password: process.env.DB_PASSWORD,
         database: process.env.DB_DATABASE,
+        ssl: isProduction ? { rejectUnauthorized: false } : false,
     },
     // ADD THIS BLOCK:
     pool: {

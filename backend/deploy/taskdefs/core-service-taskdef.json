@@ -1,0 +1,169 @@
+{
+  "family": "core-service",
+  "executionRoleArn": "arn:aws:iam::455919270013:role/ecsTaskExecutionRole",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "containerDefinitions": [
+    {
+      "name": "core-service",
+      "image": "455919270013.dkr.ecr.eu-north-1.amazonaws.com/core-service:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "name": "core-service-3000-tcp",
+          "containerPort": 3000,
+          "hostPort": 3000,
+          "protocol": "tcp",
+          "appProtocol": "http"
+        }
+      ],
+      "environment": [
+        {
+          "name": "PORT",
+          "value": "3000"
+        },
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        },
+        {
+          "name": "DB_POOL_MIN",
+          "value": "2"
+        },
+        {
+          "name": "DB_POOL_MAX",
+          "value": "10"
+        },
+        {
+          "name": "DB_MIGRATION_DIRECTORY",
+          "value": "dist/database/migrations"
+        },
+        {
+          "name": "DB_MIGRATION_EXTENSION",
+          "value": "js"
+        },
+        {
+          "name": "REDIS_HOST",
+          "value": "quickbite.zerro3.ng.0001.eun1.cache.amazonaws.com"
+        },
+        {
+          "name": "REDIS_PORT",
+          "value": "6379"
+        },
+        {
+          "name": "JWT_ACCESS_EXPIRES_IN",
+          "value": "35m"
+        },
+        {
+          "name": "JWT_REFRESH_EXPIRES_IN",
+          "value": "7d"
+        },
+        {
+          "name": "CORS_ORIGINS",
+          "value": "http://localhost:3000,http://localhost:5173,http://localhost:3001"
+        },
+        {
+          "name": "MAILJET_FROM_EMAIL",
+          "value": "zrafat80@gmail.com"
+        },
+        {
+          "name": "MAILJET_FROM_NAME",
+          "value": "Food App"
+        },
+        {
+          "name": "RABBITMQ_CORE_EVENTS_EXCHANGE",
+          "value": "core.events"
+        },
+        {
+          "name": "OUTBOX_DRAIN_CRON",
+          "value": "* * * * * *"
+        },
+        {
+          "name": "OUTBOX_BATCH_SIZE",
+          "value": "50"
+        },
+        {
+          "name": "AWS_REGION",
+          "value": "eu-north-1"
+        },
+        {
+          "name": "S3_BUCKET",
+          "value": "quick-order-core-analytics-zeyad"
+        },
+        {
+          "name": "AWS_CDN_DOMAIN",
+          "value": "d37izmm4jvsmtp.cloudfront.net"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "DB_HOST",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/db-7dk4nx:DB_HOST::"
+        },
+        {
+          "name": "DB_PORT",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/db-7dk4nx:DB_PORT::"
+        },
+        {
+          "name": "DB_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/db-7dk4nx:DB_USERNAME::"
+        },
+        {
+          "name": "DB_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/db-7dk4nx:DB_PASSWORD::"
+        },
+        {
+          "name": "DB_DATABASE",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/db-7dk4nx:DB_DATABASE::"
+        },
+        {
+          "name": "RABBITMQ_URL",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:mq-URwQfp:RABBITMQ_URL::"
+        },
+        {
+          "name": "JWT_ACCESS_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/auth-1I4ppb:JWT_ACCESS_SECRET::"
+        },
+        {
+          "name": "JWT_REFRESH_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/auth-1I4ppb:JWT_REFRESH_SECRET::"
+        },
+        {
+          "name": "INTERNAL_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/internal-JAB9k2:INTERNAL_API_KEY::"
+        },
+        {
+          "name": "MAILJET_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/mailjet-6PegdU:MAILJET_API_KEY::"
+        },
+        {
+          "name": "MAILJET_SECRET_KEY",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/mailjet-6PegdU:MAILJET_SECRET_KEY::"
+        },
+        {
+          "name": "AWS_ACCESS_KEY_ID",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/aws-AnbLNo:AWS_ACCESS_KEY_ID::"
+        },
+        {
+          "name": "AWS_SECRET_ACCESS_KEY",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:core/aws-AnbLNo:AWS_SECRET_ACCESS_KEY::"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/core-service",
+          "awslogs-create-group": "true",
+          "awslogs-region": "eu-north-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

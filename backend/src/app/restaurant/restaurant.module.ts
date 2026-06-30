@@ -5,9 +5,10 @@ import { RestaurantRepository } from './repository/restaurant.repository';
 import { RestaurantController } from './restaurant.controller';
 import { AuthModule } from 'src/app/auth/auth.module';
 import { UserModule } from 'src/app/user/user.module';
+import { MediaModule } from '../media/media.module';
 
 @Module({
-  imports: [UserModule],
+  imports: [UserModule, MediaModule],
 
   controllers: [RestaurantController],
   // Provide the service and the repository so they know about each other

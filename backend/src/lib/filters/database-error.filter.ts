@@ -5,7 +5,7 @@ import {
   HttpStatus,
   HttpException,
 } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 
 // We catch all errors here, but filter specifically for Postgres database errors.
 @Catch()

@@ -2,7 +2,12 @@ import request from 'supertest';
 import { RestaurantStatus } from 'src/app/restaurant/enums';
 import { SystemRole } from 'src/app/user/enums';
 import { describeEndpoint } from '../helpers/completeness-matrix';
-import { seedCatalog, seedRestaurant, seedUser } from '../helpers/fixtures';
+import {
+  seedCatalog,
+  seedMedia,
+  seedRestaurant,
+  seedUser,
+} from '../helpers/fixtures';
 import { useCoreIntegrationApp } from '../helpers/test-app';
 
 describe('Product HTTP integration completeness matrix', () => {
@@ -181,6 +186,7 @@ describe('Product HTTP integration completeness matrix', () => {
   describeEndpoint('POST /api/restaurants/:restaurantId/products', {
     goldenPath: async () => {
       const { ownerId, restaurantId } = await seedCatalog(testApp.database);
+      const media = await seedMedia(testApp.database, restaurantId, ownerId);
       const response = await request(testApp.app.getHttpServer())
         .post(`/api/restaurants/${restaurantId}/products`)
         .set('Cookie', cookie(ownerId, restaurantId))
@@ -188,7 +194,7 @@ describe('Product HTTP integration completeness matrix', () => {
         .send({
           name: 'Pizza',
           description: 'Cheese pizza',
-          imageUrl: 'https://cdn.test/pizza.png',
+          imageUrl: media.mediaUrl,
           categoryName: 'Pizza',
         });
       expect(response.status).toBe(201);
@@ -267,12 +273,7 @@ describe('Product HTTP integration completeness matrix', () => {
         .patch(`/api/products/${productId}?branchId=${branchId}`)
         .set(
           'Cookie',
-          cookie(
-            managerId,
-            restaurantId,
-            [branchId],
-            'branch_manager',
-          ),
+          cookie(managerId, restaurantId, [branchId], 'branch_manager'),
         )
         .set('Idempotency-Key', 'product-update-assigned-manager')
         .send({ stock: 14 })

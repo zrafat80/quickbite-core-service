@@ -34,6 +34,7 @@ import { EmailModule } from './lib/email/email.module';
 import { EventsModule } from './lib/events/events.module';
 import { LoggingModule } from './lib/logging/logging.module';
 import { LoggingInterceptor } from './lib/logging/logging.interceptor';
+import { MediaModule } from './app/media/media.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { LoggingInterceptor } from './lib/logging/logging.interceptor';
     BranchModule,
     ProductModule,
     RbacModule,
+    MediaModule,
 
     EmailModule,
     EventsModule,

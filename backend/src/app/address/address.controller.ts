@@ -11,7 +11,7 @@ import {
   Patch,
   Delete,
 } from '@nestjs/common';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { AddressService } from './address.service';
 import { CreateAddressDTO } from './dto/create-address.dto';
 import { JwtAuthGuard } from 'src/lib/middleware/guards/jwtGuard';

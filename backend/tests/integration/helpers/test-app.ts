@@ -8,6 +8,8 @@ import { AppModule } from 'src/app.module';
 import { EMAIL_PROVIDER_TOKEN } from 'src/lib/email/email.constants';
 import { MessageBrokerService } from 'src/lib/events/message-broker.service';
 import { DatabaseErrorFilter } from 'src/lib/filters/database-error.filter';
+import { S3_CLIENT } from 'src/lib/s3/s3.constants';
+import type { S3ObjectMetadata } from 'src/pkg/s3/s3.interface';
 import { EmailStub } from './email.stub';
 import { assertTestDatabase, truncateAllTables } from './test-database';
 
@@ -35,10 +37,28 @@ export function useCoreIntegrationApp() {
       this.published.length = 0;
     },
   };
+  const s3Stub = {
+    objects: new Map<string, S3ObjectMetadata>(),
+    async generatePresignedUploadUrl(input: { key: string }) {
+      return `https://uploads.test/${encodeURIComponent(input.key)}`;
+    },
+    async getObjectMetadata(key: string) {
+      return this.objects.get(key) ?? null;
+    },
+    setObject(key: string, metadata: S3ObjectMetadata) {
+      this.objects.set(key, metadata);
+    },
+    reset() {
+      this.objects.clear();
+    },
+  };
   let app: INestApplication;
   let database: Knex;
 
   beforeAll(async () => {
+    process.env.AWS_REGION ||= 'us-east-1';
+    process.env.S3_BUCKET ||= 'quickbite-test-media';
+
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -48,6 +68,8 @@ export function useCoreIntegrationApp() {
       .useValue(emailStub)
       .overrideProvider(MessageBrokerService)
       .useValue(messageBrokerStub)
+      .overrideProvider(S3_CLIENT)
+      .useValue(s3Stub)
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -70,6 +92,7 @@ export function useCoreIntegrationApp() {
     cache.clear();
     emailStub.reset();
     messageBrokerStub.reset();
+    s3Stub.reset();
   });
 
   afterAll(async () => {
@@ -85,6 +108,7 @@ export function useCoreIntegrationApp() {
     },
     emailStub,
     messageBrokerStub,
+    s3Stub,
     authCookie(payload: Record<string, unknown>) {
       const token = jwt.sign(payload, process.env.JWT_ACCESS_SECRET!, {
         expiresIn: '1h',

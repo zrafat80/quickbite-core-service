@@ -6,6 +6,7 @@ import { RestaurantService } from 'src/app/restaurant/restaurant.service';
 import { SystemRole } from 'src/app/user/enums';
 import { UserService } from 'src/app/user/user.service';
 import { createTransactionMock } from '../helpers/test-doubles';
+import { MediaService } from 'src/app/media/media.service';
 
 describe('RestaurantService', () => {
   const repository = {
@@ -20,10 +21,14 @@ describe('RestaurantService', () => {
     transaction: jest.fn().mockResolvedValue(transaction),
   };
   const users = { hashAndCreateUser: jest.fn() };
+  const media = {
+    assertCompletedMediaUrl: jest.fn().mockResolvedValue(undefined),
+  };
   const service = new RestaurantService(
     repository as unknown as RestaurantRepository,
     knex as unknown as Knex,
     users as unknown as UserService,
+    media as unknown as MediaService,
   );
   const restaurant = {
     id: 5,
@@ -134,11 +139,17 @@ describe('RestaurantService', () => {
     await expect(
       service.update(5, 7, SystemRole.RESTAURANT_USER, {
         name: 'Updated',
+        logoURL: 'https://cdn.test/logo.png',
       }),
     ).resolves.toMatchObject({ name: 'Updated' });
     await service.update(5, 999, SystemRole.SYSTEM_ADMIN, {
       name: 'Admin update',
     });
+    expect(media.assertCompletedMediaUrl).toHaveBeenCalledWith(
+      5,
+      'https://cdn.test/logo.png',
+      'restaurant_logo',
+    );
   });
 
   it('rejects update for missing restaurants or non-owners', async () => {

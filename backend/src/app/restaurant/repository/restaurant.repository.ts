@@ -79,7 +79,7 @@ export class RestaurantRepository {
       .insert({
         owner_id: data.ownerId,
         name: data.name,
-        logo_url: data.logoURL,
+        logo_url: data.logoURL ?? null,
         status: data.status || 'pending',
         primary_country: data.primaryCountry,
         // ✨ Note: We don't need to manually insert created_at, updated_at,

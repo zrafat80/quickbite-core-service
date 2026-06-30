@@ -1,6 +1,7 @@
 import { Knex } from 'knex';
 import { RestaurantStatus } from 'src/app/restaurant/enums';
 import { SystemRole } from 'src/app/user/enums';
+import { MediaStatus, MediaType } from 'src/app/media/enums';
 
 let fixtureSequence = 0;
 
@@ -130,5 +131,34 @@ export async function seedCatalog(database: Knex) {
     branchId,
     categoryId: Number(category.id),
     productId: Number(product.id),
+  };
+}
+
+export async function seedMedia(
+  database: Knex,
+  restaurantId: number,
+  uploadedBy: number,
+  overrides: Record<string, unknown> = {},
+) {
+  const path = `restaurant/${restaurantId}/product_image/${nextFixtureValue('media')}.jpg`;
+  const mediaUrl = `https://quickbite-test-media.s3.us-east-1.amazonaws.com/${path}`;
+  const [media] = await database('media')
+    .insert({
+      restaurant_id: restaurantId,
+      uploaded_by: uploadedBy,
+      media_type: MediaType.PRODUCT_IMAGE,
+      content_type: 'image/jpeg',
+      status: MediaStatus.COMPLETED,
+      path,
+      media_url: mediaUrl,
+      completed_at: new Date(),
+      ...overrides,
+    })
+    .returning(['id', 'path', 'media_url']);
+
+  return {
+    id: Number(media.id),
+    path: media.path as string,
+    mediaUrl: media.media_url as string,
   };
 }

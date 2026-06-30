@@ -25,12 +25,25 @@ export default () => ({
     refreshSecret: process.env.JWT_REFRESH_SECRET as string,
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN as string,
   },
-  corsOrigins: process.env.CORS_ORIGNS?.split(','),
+  corsOrigins: (process.env.CORS_ORIGINS || process.env.CORS_ORIGNS)?.split(
+    ',',
+  ),
   mailjet: {
     apiKey: process.env.MAILJET_API_KEY as string,
     secretKey: process.env.MAILJET_SECRET_KEY as string,
     fromEmail: process.env.MAILJET_FROM_EMAIL as string,
     fromName: process.env.MAILJET_FROM_NAME as string,
+  },
+  s3: {
+    region: process.env.AWS_REGION || process.env.aws_region,
+    bucket: process.env.S3_BUCKET || process.env.s3_bucket,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    cdnDomain: process.env.AWS_CDN_DOMAIN,
+    presignedUrlExpiresInSeconds: parseInt(
+      process.env.S3_PRESIGNED_URL_EXPIRES_IN_SECONDS || '300',
+      10,
+    ),
   },
 
   // Shared secret for service-to-service HTTP calls (matched against

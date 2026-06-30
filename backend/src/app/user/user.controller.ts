@@ -1,6 +1,6 @@
 // src/user/user.controller.ts
 import { Body, Controller, Get, Patch, Req, UseGuards } from '@nestjs/common';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from 'src/lib/middleware/guards/jwtGuard';
 import { UpdateProfileDTO } from './dto/user-profile.dto';

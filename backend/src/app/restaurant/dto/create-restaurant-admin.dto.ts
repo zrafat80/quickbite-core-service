@@ -1,4 +1,12 @@
-import { IsString, IsNotEmpty, IsOptional, ValidateNested, IsEmail, MinLength, IsStrongPassword, MaxLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  IsStrongPassword,
+  MaxLength,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateRestaurantOwnerDTO {
@@ -37,10 +45,6 @@ export class CreateRestaurantAdminDTO {
   @IsString()
   @IsNotEmpty()
   name!: string;
-
-  @IsString()
-  @IsOptional()
-  logoUrl?: string;
 
   @IsString()
   @IsNotEmpty()

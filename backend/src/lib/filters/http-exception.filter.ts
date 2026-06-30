@@ -5,7 +5,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { RequestContextService } from '../context/request-context.service';
 
 @Catch() // Keep this empty to catch ALL errors, not just HttpExceptions

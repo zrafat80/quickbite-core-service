@@ -8,7 +8,7 @@ import { Observable, tap } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { DatabaseLoggerService } from './database-logger.service';
 import { RequestContextService } from '../context/request-context.service';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { Log } from './log.interface';
 
 // 1. Tell TypeScript that our requests might have a 'user' object attached

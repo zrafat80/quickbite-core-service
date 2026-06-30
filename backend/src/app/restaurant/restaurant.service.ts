@@ -19,6 +19,8 @@ import { CreateRestaurantAdminDTO } from './dto/create-restaurant-admin.dto';
 import { UpdateRestaurantDTO } from './dto/update-restaurant.dto';
 import { USER_ERRORS } from 'src/app/user/user.constants';
 import { User } from '../user/entity/user.entity';
+import { MediaService } from '../media/media.service';
+import { MediaType } from '../media/enums';
 
 // 📍 Import the Parsers and Builder
 import {
@@ -36,6 +38,7 @@ export class RestaurantService {
     // 🌟 Inject UserRepo to check and create users
     @Inject('KNEX_CONNECTION') private readonly knex: Knex,
     private readonly userService: UserService,
+    private readonly mediaService: MediaService,
   ) {}
 
   // 2. Use standard async class methods instead of arrow functions
@@ -50,7 +53,6 @@ export class RestaurantService {
     const restaurantData: Partial<RestaurantEntity> = {
       ownerId: userId,
       name: data.name,
-      logoURL: data.logoURL,
       primaryCountry: data.primaryCountry,
       status: RestaurantStatus.PENDING, // Or simply 'pending'
     };
@@ -134,7 +136,6 @@ export class RestaurantService {
         {
           ownerId: newOwner.id,
           name: data.name,
-          logoURL: data.logoUrl,
           primaryCountry: data.primaryCountry,
         },
         trx,
@@ -180,6 +181,14 @@ export class RestaurantService {
       Number(restaurant.ownerId) !== Number(userId)
     ) {
       throw new ForbiddenException(RESTAURANT_ERRORS.NO_PERMISSION);
+    }
+
+    if (data.logoURL) {
+      await this.mediaService.assertCompletedMediaUrl(
+        id,
+        data.logoURL,
+        MediaType.RESTAURANT_LOGO,
+      );
     }
 
     // 3. Update and return

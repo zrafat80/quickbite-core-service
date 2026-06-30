@@ -16,6 +16,8 @@ import { UpdateProductDTO } from './dto/update-product.dto';
 import { ProductBranchDetailsRepository } from './repository/product-branch-details.repository';
 import { OutboxRepository } from '../../lib/events/outbox.repository';
 import { EVENT_TYPES } from '../../lib/events/event-types';
+import { MediaService } from '../media/media.service';
+import { MediaType } from '../media/enums';
 
 // 📍 Import the Parsers and Builder
 import {
@@ -32,6 +34,7 @@ export class ProductService {
     private readonly branchDetailsRepo: ProductBranchDetailsRepository,
     private readonly restaurantService: RestaurantService,
     private readonly outboxRepo: OutboxRepository,
+    private readonly mediaService: MediaService,
     @Inject('KNEX_CONNECTION') private readonly knex: Knex,
   ) {}
 
@@ -49,6 +52,14 @@ export class ProductService {
       Number(restaurant.ownerId) !== Number(userId)
     ) {
       throw new ForbiddenException(PRODUCT_ERRORS.NO_PERMISSION);
+    }
+
+    if (data.imageUrl) {
+      await this.mediaService.assertCompletedMediaUrl(
+        restaurantId,
+        data.imageUrl,
+        MediaType.PRODUCT_IMAGE,
+      );
     }
 
     const trx = await this.knex.transaction();
@@ -227,6 +238,14 @@ export class ProductService {
       );
     }
 
+    if (data.imageUrl) {
+      await this.mediaService.assertCompletedMediaUrl(
+        product.restaurantId,
+        data.imageUrl,
+        MediaType.PRODUCT_IMAGE,
+      );
+    }
+
     // 3. Start Transaction
     const trx = await this.knex.transaction();
 
@@ -372,7 +391,10 @@ export class ProductService {
     items: Array<{ productId: number; quantity: number }>,
   ) {
     if (items.length === 0) {
-      return { ok: true, reserved: [] as Array<{ productId: number; quantity: number }> };
+      return {
+        ok: true,
+        reserved: [] as Array<{ productId: number; quantity: number }>,
+      };
     }
     const trx = await this.knex.transaction();
     try {
@@ -417,7 +439,10 @@ export class ProductService {
     items: Array<{ productId: number; quantity: number }>,
   ) {
     if (items.length === 0) {
-      return { ok: true, released: [] as Array<{ productId: number; quantity: number }> };
+      return {
+        ok: true,
+        released: [] as Array<{ productId: number; quantity: number }>,
+      };
     }
     const trx = await this.knex.transaction();
     try {

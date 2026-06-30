@@ -6,9 +6,10 @@ export const databaseProviders = [
     provide: 'KNEX_CONNECTION',
     inject: [ConfigService], 
     useFactory: async (configService: ConfigService) => {
-      
+      const environment = configService.get<string>('environment');
       const isTestEnv = 
-        configService.get<string>('environment') === 'test' || process.env.JEST_WORKER_ID;
+        environment === 'test' || process.env.JEST_WORKER_ID;
+      const isProduction = environment === 'production' && !isTestEnv;
       
       const dbType = isTestEnv ? 'testDatabase' : 'database';
 
@@ -20,6 +21,7 @@ export const databaseProviders = [
           user: configService.get<string>(`${dbType}.username`),
           password: configService.get<string>(`${dbType}.password`),
           database: configService.get<string>(`${dbType}.name`),
+          ssl: isProduction ? { rejectUnauthorized: false } : false,
         },
         pool: {
           min: configService.get<number>('database.poolMin'),
