@@ -62,6 +62,7 @@ export class BranchRepository {
   async findInternalById(id: number): Promise<{
     id: number;
     restaurantId: number;
+    restaurantOwnerId: number;
     restaurantStatus: string;
     restaurantName: string;
     countryCode: string;
@@ -92,6 +93,7 @@ export class BranchRepository {
         'b.address_text',
         'r.status as restaurant_status',
         'r.name as restaurant_name',
+        'r.owner_id as restaurant_owner_id',
       )
       .where('b.id', id)
       .first();
@@ -99,6 +101,7 @@ export class BranchRepository {
     return {
       id: Number(row.id),
       restaurantId: Number(row.restaurant_id),
+      restaurantOwnerId: Number(row.restaurant_owner_id),
       restaurantStatus: row.restaurant_status,
       restaurantName: row.restaurant_name,
       countryCode: row.country_code,
@@ -134,12 +137,14 @@ export class BranchRepository {
         'b.address_text',
         'r.status as restaurant_status',
         'r.name as restaurant_name',
+        'r.owner_id as restaurant_owner_id',
       )
       .whereIn('b.id', ids);
 
     return rows.map((row: any) => ({
       id: Number(row.id),
       restaurantId: Number(row.restaurant_id),
+      restaurantOwnerId: Number(row.restaurant_owner_id),
       restaurantStatus: row.restaurant_status,
       restaurantName: row.restaurant_name,
       countryCode: row.country_code,
