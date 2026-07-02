@@ -41,6 +41,18 @@
           "value": "10"
         },
         {
+          "name": "ASSIGNMENT_SWEEPER_ENABLED",
+          "value": "true"
+        },
+        {
+          "name": "ASSIGNMENT_SWEEP_BATCH_SIZE",
+          "value": "100"
+        },
+        {
+          "name": "READY_STALE_SEC",
+          "value": "31536000"
+        },
+        {
           "name": "DB_MIGRATION_DIRECTORY",
           "value": "dist/database/migrations"
         },
@@ -185,6 +197,10 @@
         {
           "name": "RABBITMQ_URL",
           "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:mq-URwQfp:RABBITMQ_URL::"
+        },
+        {
+          "name": "KASHIER_SECRET_JSON",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/kashier-q1JR6T"
         },
         {
           "name": "ACCESS_SECRET",
