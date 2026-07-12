@@ -109,6 +109,14 @@
           "value": "35m"
         },
         {
+          "name": "KASHIER_BASE_URL",
+          "value": "https://test-api.kashier.io"
+        },
+        {
+          "name": "KASHIER_FEP_URL",
+          "value": "https://test-fep.kashier.io"
+        },
+        {
           "name": "REFRESH_EXPIRES_IN",
           "value": "7d"
         }
@@ -199,8 +207,16 @@
           "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:mq-URwQfp:RABBITMQ_URL::"
         },
         {
-          "name": "KASHIER_SECRET_JSON",
-          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/kashier-q1JR6T"
+          "name": "KASHIER_MERCHANT_ID",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/kashier-q1JR6T:merchant_id::"
+        },
+        {
+          "name": "KASHIER_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/kashier-q1JR6T:api_key::"
+        },
+        {
+          "name": "KASHIER_SECRET_KEY",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:455919270013:secret:order/kashier-q1JR6T:secret::"
         },
         {
           "name": "ACCESS_SECRET",

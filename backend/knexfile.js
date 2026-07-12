@@ -25,5 +25,6 @@ exports.default = {
             : './src/database/migrations',
         // Tell Knex to look for .js files in production, and .ts files locally
         extension: isProduction ? 'js' : 'ts',
+        loadExtensions: [isProduction ? '.js' : '.ts'],
     },
 };

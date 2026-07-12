@@ -41,7 +41,11 @@ import { MediaModule } from './app/media/media.module';
     CacheModule.registerAsync({
       isGlobal: true,
       useFactory: () => ({
-        stores: [createKeyv('redis://127.0.0.1:6379')],
+        stores: [
+          createKeyv(
+            `redis://${process.env.REDIS_HOST || '127.0.0.1'}:${process.env.REDIS_PORT || '6379'}`,
+          ),
+        ],
         ttl: 3600000,
       }),
     }),
