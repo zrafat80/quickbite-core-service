@@ -28,3 +28,10 @@
 /backend/test-logo.png
 /backend/test-product.jpg
 /backend/test-rest-id.txt
+
+# Local AWS deploy/teardown exports and secrets
+/backend/deploy/
+*.secret.json
+*env-secrets*.json
+quickbite-aws-manifest.json
+teardown-state/
