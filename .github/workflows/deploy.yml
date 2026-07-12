@@ -1,8 +1,11 @@
 name: Deploy
 
+# AWS deployment is intentionally disabled because the AWS infrastructure was torn down.
+# Re-enable this workflow only after ECS, ECR, IAM, networking, task definitions, and
+# GitHub AWS secrets have been recreated and verified.
 on:
-  push:
-    branches: [main]
+  # push:
+  #   branches: [main]
   workflow_dispatch: {}
 
 permissions:
@@ -41,6 +44,7 @@ jobs:
   deploy:
     name: Deploy
     needs: test
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
